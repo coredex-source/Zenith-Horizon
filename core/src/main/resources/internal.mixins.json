@@ -10,7 +10,8 @@
     "jij.PluginInitializerManagerMixin",
     "plugins.FileProviderSourceMixin",
     "plugins.mixin.PaperSimplePluginClassLoaderMixin",
-    "plugins.mixin.PluginClassLoaderMixin"
+    "plugins.mixin.PluginClassLoaderMixin",
+    "spark.SparkPlatformMixin"
   ],
   "package": "io.canvasmc.horizon.inject.mixin",
   "mixinPriority": 1,

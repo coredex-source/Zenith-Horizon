@@ -16,6 +16,10 @@ repositories {
         name = "Paper"
         url = uri(paperMavenPublicUrl)
     }
+    maven {
+        name = "canvasReleases"
+        url = uri("https://maven.canvasmc.io/releases")
+    }
 }
 
 dependencies {
@@ -34,6 +38,11 @@ dependencies {
 
     // annotations -- compileOnly
     compileOnly(libs.jspecify)
+
+    // spark mod for fabric, need its utils
+    include(libs.spark.fabric) {
+        isTransitive = false
+    }
 
     // minecraft setup
     paperweight.paperDevBundle(libs.versions.paper.dev.bundle)

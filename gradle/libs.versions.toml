@@ -12,6 +12,7 @@ run-paper = "3.0.2"
 jspecify = "1.0.0"
 junit = "6.1.0"
 shadow = "9.5.1"
+spark-fabric = "1.10.180"
 
 [libraries]
 jbsdiff = { module = "io.sigpipe:jbsdiff", version = "1.0" }
@@ -33,6 +34,7 @@ cadix-atlas = { module = "org.cadixdev:atlas", version = "0.2.1" }
 userdev = { module = "io.canvasmc.weaver.userdev:io.canvasmc.weaver.userdev.gradle.plugin", version.ref = "userdev" }
 run-paper = { module = "xyz.jpenilla.run-paper:xyz.jpenilla.run-paper.gradle.plugin", version.ref = "run-paper" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+spark-fabric = { module = "me.lucko:spark-fabric", version.ref = "spark-fabric" }
 
 # for tests
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
