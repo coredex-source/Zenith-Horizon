@@ -6,6 +6,7 @@ import io.canvasmc.horizon.util.jij.configureSplitSources
 import io.canvasmc.horizon.util.providerSet
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
@@ -18,6 +19,7 @@ import javax.inject.Inject
 
 abstract class HorizonExtension @Inject constructor(
     objects: ObjectFactory,
+    configurations: ConfigurationContainer,
     private val project: Project
 ) {
     /**
@@ -46,8 +48,8 @@ abstract class HorizonExtension @Inject constructor(
      */
     val addServerDependencyTo: SetProperty<Configuration> = objects.setProperty<Configuration>().convention(
         objects.providerSet(
-            project.configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
-            project.configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
+            configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
+            configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
         )
     )
 
@@ -59,8 +61,8 @@ abstract class HorizonExtension @Inject constructor(
      */
     val addHorizonApiDependencyTo: SetProperty<Configuration> = objects.setProperty<Configuration>().convention(
         objects.providerSet(
-            project.configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
-            project.configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
+            configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
+            configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
         )
     )
 
@@ -72,8 +74,8 @@ abstract class HorizonExtension @Inject constructor(
      */
     val addRuntimePluginTo: SetProperty<Configuration> = objects.setProperty<Configuration>().convention(
         objects.providerSet(
-            project.configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
-            project.configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
+            configurations.named(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
+            configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
         )
     )
 
@@ -82,8 +84,8 @@ abstract class HorizonExtension @Inject constructor(
      */
     val addIncludedDependenciesTo: SetProperty<Configuration> = objects.setProperty<Configuration>().convention(
         objects.providerSet(
-            project.configurations.named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME),
-            project.configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
+            configurations.named(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME),
+            configurations.named(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
         )
     )
 
