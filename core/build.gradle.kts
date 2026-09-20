@@ -1,5 +1,6 @@
 plugins {
     id("io.canvasmc.weaver.userdev")
+    id("build-conventions")
     id("publishing-conventions")
     id("versioning-conventions")
     id("io.canvasmc.horizon")

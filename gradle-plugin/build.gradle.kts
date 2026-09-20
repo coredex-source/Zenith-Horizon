@@ -1,6 +1,7 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -8,12 +9,13 @@ plugins {
     alias(libs.plugins.blossom)
     alias(libs.plugins.plugin.publish)
     alias(libs.plugins.spotless)
-    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.shadow)
 }
 
-val javaVersion = 17
-val userdev = configurations.register("userdev")
+val javaVersion = 21
+
+val userdev = configurations.dependencyScope("userdev")
+val userdevResolvable = configurations.resolvable("userdevResolvable")
 
 configurations {
     compileOnly {
@@ -51,8 +53,9 @@ kotlin {
         languageVersion = JavaLanguageVersion.of(javaVersion)
     }
     compilerOptions {
-        jvmTarget = JvmTarget.JVM_17
-        freeCompilerArgs = listOf("-Xjvm-default=all", "-Xjdk-release=$javaVersion")
+        jvmTarget = JvmTarget.JVM_21
+        jvmDefault = JvmDefaultMode.NO_COMPATIBILITY
+        freeCompilerArgs = listOf("-Xjdk-release=$javaVersion")
     }
 }
 
@@ -66,7 +69,7 @@ tasks.register("printVersion") {
 val generatedTestSources = layout.buildDirectory.dir("generated/resources/horizon/test")
 
 val copyUserdevForTests = tasks.register<Copy>("copyUserdevForTests") {
-    from(userdev.map { it.singleFile })
+    from(userdevResolvable.map { it.singleFile })
     into(generatedTestSources.map { it.dir("build-data") })
     rename { "userdev.jar" }
 }
@@ -106,13 +109,13 @@ tasks.withType<ProcessResources>().configureEach {
 
 sourceSets.all {
     blossom.kotlinSources {
-        properties.put("jst_version", providers.gradleProperty("jstVersion"))
+        property("jst_version", providers.gradleProperty("jstVersion"))
     }
 }
 
 testing {
     suites {
-        withType(JvmTestSuite::class).configureEach {
+        named<JvmTestSuite>("test") {
             useKotlinTest(embeddedKotlinVersion)
             dependencies {
                 implementation(libs.junit.jupiter.engine)
@@ -165,7 +168,7 @@ configurations.all {
 configurations.shadowRuntimeElements {
     attributes {
         attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, javaVersion)
-        attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE, named("9.0.0"))
+        attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE, named("9.4.0"))
     }
 }
 

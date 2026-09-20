@@ -7,8 +7,8 @@ mixin = "0.17.3+mixin.0.8.7"
 mixin-extras = "0.5.4"
 asm = "9.10.1"
 paper-dev-bundle = "26.2.build.+"
-userdev = "2.4.5"
-run-paper = "3.0.2"
+userdev = "2.5.1"
+run-paper = "3.1.0"
 jspecify = "1.0.0"
 junit = "6.1.0"
 shadow = "9.5.1"
@@ -48,7 +48,7 @@ asm = [ "asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util" ]
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 blossom = { id = "net.kyori.blossom", version = "2.2.0" }
-spotless = { id = "com.diffplug.spotless", version = "8.8.0" }
-plugin-publish = { id = "com.gradle.plugin-publish", version = "2.1.1" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.3.21" }
+spotless = { id = "com.diffplug.spotless", version = "8.10.2" }
+plugin-publish = { id = "com.gradle.plugin-publish", version = "2.2.1" }
 userdev = { id = "io.canvasmc.weaver.userdev", version.ref = "userdev" }
+run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }

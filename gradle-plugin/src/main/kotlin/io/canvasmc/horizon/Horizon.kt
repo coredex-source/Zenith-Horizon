@@ -13,7 +13,6 @@ import io.papermc.paperweight.userdev.PaperweightUserExtension
 import io.papermc.paperweight.userdev.internal.setup.UserdevSetupTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.tasks.Delete
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.kotlin.dsl.*
@@ -47,12 +46,12 @@ abstract class Horizon : Plugin<Project> {
 
         // resolvable configuration for Horizon API
         target.configurations.resolvable(HORIZON_API_RESOLVABLE_CONFIG) {
-            extendsFrom(horizonApi.get())
+            extendsFrom(horizonApi)
         }
 
         // resolvable non-transitive configuration for Horizon API for use in run tasks
         target.configurations.resolvable(HORIZON_API_SINGLE_RESOLVABLE_CONFIG) {
-            extendsFrom(horizonApi.get())
+            extendsFrom(horizonApi)
             isTransitive = false
         }
 
@@ -96,18 +95,32 @@ abstract class Horizon : Plugin<Project> {
                 }
             }
             // populate compile classpath
-            ext.addServerDependencyTo.get().forEach {
-                it.extendsFrom(configurations.named(TRANSFORMED_MOJANG_MAPPED_SERVER_CONFIG).get())
+            ext.addServerDependencyTo.get().forEach { config ->
+                config.configure {
+                    extendsFrom(configurations.named(TRANSFORMED_MOJANG_MAPPED_SERVER_CONFIG))
+                }
             }
             // set up horizon api dependency
-            ext.addHorizonApiDependencyTo.get().forEach {
+            ext.addHorizonApiDependencyTo.get().forEach { config ->
                 // we want to resolve it from the context of the horizon api configurations so pass only the files
                 // do not extend as that would resolve it from the context of compileClasspath which we dont want
-                it.dependencies.add(dependencyFactory.create(files(configurations.named(HORIZON_API_RESOLVABLE_CONFIG))))
+                config.configure {
+                    dependencies.add(
+                        dependencyFactory.create(
+                            files(
+                                configurations.named(
+                                    HORIZON_API_RESOLVABLE_CONFIG
+                                )
+                            )
+                        )
+                    )
+                }
             }
             // set up provided runtime plugin dependencies
-            ext.addRuntimePluginTo.get().forEach {
-                it.extendsFrom(configurations.named(RUNTIME_PLUGIN_CONFIG).get())
+            ext.addRuntimePluginTo.get().forEach { config ->
+                config.configure {
+                    extendsFrom(configurations.named(RUNTIME_PLUGIN_CONFIG))
+                }
             }
         }
 
@@ -154,22 +167,15 @@ abstract class Horizon : Plugin<Project> {
             atFile.set(mergeAccessTransformers.flatMap { it.outputFile })
         }
 
-        val horizonSetup = tasks.register<Task>("horizonSetup") {
-            group = HORIZON_NAME
-            dependsOn(applyClassAccessTransforms)
-        }
-
-        tasks.named("classes") { dependsOn(horizonSetup) } // this also attaches the task to the lifecycle
-
         configurations.named(TRANSFORMED_MOJANG_MAPPED_SERVER_CONFIG).configure {
             defaultDependencies {
-                add((dependencyFactory.create(files(applyClassAccessTransforms.flatMap { it.outputJar }))))
+                add(dependencyFactory.create(files(applyClassAccessTransforms.flatMap { it.outputJar })))
             }
         }
 
         configurations.named(TRANSFORMED_MOJANG_MAPPED_SERVER_RUNTIME_CONFIG).configure {
             defaultDependencies {
-                add((dependencyFactory.create(files(applyClassAccessTransforms.flatMap { it.outputJar }))))
+                add(dependencyFactory.create(files(applyClassAccessTransforms.flatMap { it.outputJar })))
             }
         }
     }

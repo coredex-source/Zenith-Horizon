@@ -2,33 +2,8 @@ plugins {
     java
     idea
     alias(libs.plugins.userdev) apply false
+    alias(libs.plugins.run.paper) apply false
 }
-
-subprojects {
-    apply(plugin = "java-library")
-    apply(plugin = "maven-publish")
-
-    java {
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(25))
-        }
-    }
-
-    tasks.withType<JavaCompile>().configureEach {
-        options.encoding = Charsets.UTF_8.name()
-        options.isFork = true
-    }
-
-    tasks.withType<Javadoc>().configureEach {
-        options.encoding = Charsets.UTF_8.name()
-        (options as StandardJavadocDocletOptions).tags("apiNote:a:API Note:")
-    }
-
-    tasks.withType<ProcessResources>().configureEach {
-        filteringCharset = Charsets.UTF_8.name()
-    }
-}
-
 
 tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
