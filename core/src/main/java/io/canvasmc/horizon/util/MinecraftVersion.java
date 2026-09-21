@@ -14,10 +14,22 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public enum MinecraftVersion {
     /**
-     * <a href="https://minecraft.wiki/w/Third_Drop_2026">Third Drop of 2026</a>
-     *
-     * @apiNote This is the active upcoming drop for Minecraft
+     * <a href="https://minecraft.wiki/w/Wilderness_Bound">Wilderness Bound</a> drop
      */
+    V26_3("26.3", "26.3", 25, VersionType.STABLE),
+    V26_3_RC3("26.3-rc-3", "26.3 Release Candidate 3", 25, VersionType.RELEASE_CANDIDATE),
+    V26_3_RC2("26.3-rc-2", "26.3 Release Candidate 2", 25, VersionType.RELEASE_CANDIDATE),
+    V26_3_RC1("26.3-rc-1", "26.3 Release Candidate 1", 25, VersionType.RELEASE_CANDIDATE),
+    V26_3_PR3("26.3-pre-3", "26.3 Pre-Release 3", 25, VersionType.PRE_RELEASE),
+    V26_3_PR2("26.3-pre-2", "26.3 Pre-Release 2", 25, VersionType.PRE_RELEASE),
+    V26_3_PR1("26.3-pre-1", "26.3 Pre-Release 1", 25, VersionType.PRE_RELEASE),
+    V26_3_SNAPSHOT_10("26.3-snapshot-10", "26.3 Snapshot 10", 25, VersionType.SNAPSHOT),
+    V26_3_SNAPSHOT_9("26.3-snapshot-9", "26.3 Snapshot 9", 25, VersionType.SNAPSHOT),
+    V26_3_SNAPSHOT_8("26.3-snapshot-8", "26.3 Snapshot 8", 25, VersionType.SNAPSHOT),
+    V26_3_SNAPSHOT_7("26.3-snapshot-7", "26.3 Snapshot 7", 25, VersionType.SNAPSHOT),
+    V26_3_SNAPSHOT_6("26.3-snapshot-6", "26.3 Snapshot 6", 25, VersionType.SNAPSHOT),
+    V26_3_SNAPSHOT_5("26.3-snapshot-5", "26.3 Snapshot 5", 25, VersionType.SNAPSHOT),
+    V26_3_SNAPSHOT_4("26.3-snapshot-4", "26.3 Snapshot 4", 25, VersionType.SNAPSHOT),
     V26_3_SNAPSHOT_3("26.3-snapshot-3", "26.3 Snapshot 3", 25, VersionType.SNAPSHOT),
     V26_3_SNAPSHOT_2("26.3-snapshot-2", "26.3 Snapshot 2", 25, VersionType.SNAPSHOT),
     V26_3_SNAPSHOT_1("26.3-snapshot-1", "26.3 Snapshot 1", 25, VersionType.SNAPSHOT),
