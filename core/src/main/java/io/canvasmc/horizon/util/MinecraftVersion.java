@@ -14,6 +14,13 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public enum MinecraftVersion {
     /**
+     * <a href="https://minecraft.wiki/w/Fourth_Drop_2026">Fourth Drop of 2026</a> drop
+     *
+     * @apiNote This is the active upcoming drop for Minecraft
+     */
+    V26_4_SNAPSHOT_1("26.4-snapshot-1", "26.4 Snapshot 1", 25, VersionType.SNAPSHOT),
+
+    /**
      * <a href="https://minecraft.wiki/w/Wilderness_Bound">Wilderness Bound</a> drop
      */
     V26_3("26.3", "26.3", 25, VersionType.STABLE),
