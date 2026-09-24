@@ -13,25 +13,14 @@ val include = configurations.dependencyScope("include") {
     extendsFrom(configurations.api)
 }
 
-val bundle = configurations.dependencyScope("bundle")
-
 configurations {
     implementation {
         extendsFrom(include)
-    }
-    compileOnly {
-        extendsFrom(bundle)
     }
 }
 
 val includeResolvable = configurations.resolvable("includeResolvable") {
     extendsFrom(include)
-    extendsFrom(bundle)
-}
-
-val bundleResolvable = configurations.resolvable("bundleResolvable") {
-    extendsFrom(bundle)
-    isTransitive = false
 }
 
 val collectIncludedDependencies = tasks.register<CollectDependenciesTask>("collectIncludedDependencies") {
@@ -76,9 +65,6 @@ val createPublicationJar = tasks.register<Jar>("createPublicationJar") {
 
     archiveFileName.set("horizon.$version.jar")
     from(tasks.jar.map { zipTree(it.archiveFile) })
-    from(bundleResolvable.map { configuration -> configuration.incoming.files.map { zipTree(it) } }) {
-        exclude("META-INF/MANIFEST.MF")
-    }
 
     from(collectIncludedDependencies.flatMap { it.outputDir }) {
         include("*.context")

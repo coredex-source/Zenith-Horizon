@@ -1,6 +1,7 @@
 package io.canvasmc.horizon;
 
 import com.llamalad7.mixinextras.MixinExtrasBootstrap;
+import io.canvasmc.horizon.fabric.HorizonFabric;
 import io.canvasmc.horizon.plugin.types.HorizonPlugin;
 import io.canvasmc.horizon.service.BootstrapMixinService;
 import io.canvasmc.horizon.service.EmberClassLoader;
@@ -14,6 +15,7 @@ import org.spongepowered.asm.service.MixinService;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -50,6 +52,8 @@ public final class MixinLaunch {
             "org\\.tinylog\\." + "|" +
             "org\\.spongepowered\\.asm\\." + "|" +
             "com\\.llamalad7\\.mixinextras\\." + "|" +
+            "net\\.fabricmc\\.loader\\." + "|" +
+            "net\\.fabricmc\\.api\\." + "|" +
             "org\\.slf4j\\." + "|" +
             "org\\.apache\\.logging\\.log4j\\." +
             ").*"
@@ -93,6 +97,7 @@ public final class MixinLaunch {
         this.classLoader.addManifestLocator(this.manifestLocator());
         this.transformer.addExclusionFilter(this.resourceFilter());
 
+        HorizonFabric.load(this.classLoader, this.context.gameJar, this.mainClass(), Arrays.asList(this.context.initialGameConnections), this.context.args);
         prepareMixin(HorizonLoader.getInstance().pluginLoader);
 
         try {
@@ -135,6 +140,14 @@ public final class MixinLaunch {
             }
         } catch (final Exception exception) {
             LOGGER.error(exception, "Failed to launch the game!");
+        }
+    }
+
+    private @NonNull String mainClass() {
+        try (final JarFile file = new JarFile(this.context.gameJar.toFile())) {
+            return file.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+        } catch (final IOException exception) {
+            throw new UncheckedIOException("Couldn't read main class of the game's jar file", exception);
         }
     }
 

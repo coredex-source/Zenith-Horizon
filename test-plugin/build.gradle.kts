@@ -7,6 +7,12 @@ plugins {
 
 version = "1.0.0-SNAPSHOT"
 
+val testMods = configurations.dependencyScope("testMods")
+val testModsClasspath = configurations.resolvable("testModsClasspath") {
+    extendsFrom(testMods.get())
+    isTransitive = false
+}
+
 dependencies {
     // minecraft setup
     paperweight.paperDevBundle(libs.versions.paper.dev.bundle)
@@ -15,6 +21,19 @@ dependencies {
     horizon.horizonApi(projects.core) {
         targetConfiguration = "runtimeElements"
     }
+
+    testMods.name(projects.testFabricMod) {
+        targetConfiguration = "runtimeElements"
+    }
+}
+
+val copyTestMods = tasks.register<Copy>("copyTestMods") {
+    from(testModsClasspath)
+    into(layout.projectDirectory.dir("run/mods"))
+}
+
+tasks.runServer {
+    dependsOn(copyTestMods)
 }
 
 /*

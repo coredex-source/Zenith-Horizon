@@ -37,11 +37,7 @@ dependencies {
     // for paperclip impl
     include(libs.jbsdiff)
 
-    include(libs.classtweaker) {
-        exclude(group = "net.fabricmc", module = "tiny-remapper")
-    }
-
-    bundle(projects.fabricLoader)
+    include(libs.fabric.loader)
 
     // annotations -- compileOnly
     compileOnly(libs.jspecify)

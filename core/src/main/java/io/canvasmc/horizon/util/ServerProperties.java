@@ -32,9 +32,11 @@ import java.util.regex.Pattern;
  */
 public record ServerProperties(
     File pluginsDirectory,
+    File modsDirectory,
     File serverJar,
     File cacheLocation,
-    List<File> extraPlugins
+    List<File> extraPlugins,
+    List<File> extraMods
 ) {
     private static final Pattern ADD_PLUGIN_PATTERN =
         Pattern.compile("^--?add-(plugin|extra-plugin-jar)=(.+)$");
@@ -70,14 +72,22 @@ public record ServerProperties(
         return initial;
     }
 
+    private static @NonNull List<File> extractExtraMods(@NonNull ObjectTree tree) {
+        return tree.getArrayOptional("extraMods")
+            .map((arr) -> arr.asList(String.class).stream().map(File::new).toList())
+            .orElse(List.of());
+    }
+
     public static @NonNull ServerProperties load(String[] args) {
         File file = new File("horizon.yml");
         try {
             ObjectTree defaultTree = ObjectTree.builder()
                 .put("pluginsDirectory", "plugins")
+                .put("modsDirectory", "mods")
                 .put("serverJar", "server.jar")
                 .put("cacheLocation", "cache/horizon")
                 .put("extraPlugins", List.of())
+                .put("extraMods", List.of())
                 .build();
 
             // create default if not exist
@@ -102,12 +112,17 @@ public record ServerProperties(
                 // really should only be used for the runServer
                 .registerOverrideKey("serverJar", "Horizon.serverJar")
                 .registerOverrideKey("pluginsDirectory", "Horizon.pluginsDirectory")
+                .registerOverrideKey("modsDirectory", "Horizon.modsDirectory")
                 .registerOverrideKey("cacheLocation", "Horizon.cacheLocation")
                 .registerDeserializer(ServerProperties.class, tree1 -> new ServerProperties(
                     tree1.getValueOrThrow("pluginsDirectory").as(File.class),
+                    tree1.getValueOptional("modsDirectory")
+                        .map((value) -> value.as(File.class))
+                        .orElseGet(() -> new File(System.getProperty("Horizon.modsDirectory", "mods"))),
                     tree1.getValueOrThrow("serverJar").as(File.class),
                     tree1.getValueOrThrow("cacheLocation").as(File.class),
-                    extractExtraPlugins(tree1, args)
+                    extractExtraPlugins(tree1, args),
+                    extractExtraMods(tree1)
                 ))
                 .from(new FileReader(file));
 

@@ -3,6 +3,7 @@ package io.canvasmc.horizon.inject;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.canvasmc.horizon.HorizonLoader;
+import io.canvasmc.horizon.fabric.HorizonFabric;
 import io.canvasmc.horizon.plugin.types.HorizonPlugin;
 import io.canvasmc.horizon.util.FileJar;
 import io.canvasmc.horizon.util.tree.ObjectTree;
@@ -10,6 +11,8 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.provider.configuration.PaperPluginMeta;
 import net.kyori.adventure.text.Component;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.ConsoleCommandSender;
@@ -44,6 +47,7 @@ public class HorizonPluginsCommand {
     private static int executeOverview(final @NonNull CommandSourceStack source) {
         Map<Type, List<Component>> plugins = new HashMap<>();
         plugins.put(Type.HORIZON, new ArrayList<>());
+        plugins.put(Type.FABRIC, new ArrayList<>());
         plugins.put(Type.PAPER, new ArrayList<>());
         plugins.put(Type.SPIGOT, new ArrayList<>());
 
@@ -66,6 +70,14 @@ public class HorizonPluginsCommand {
             plugins.get(Type.HORIZON).add(bundleAwareName(plugin));
         }
 
+        if (HorizonFabric.isLoaded()) {
+            for (final ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+                if (isUserMod(mod)) {
+                    plugins.get(Type.FABRIC).add(Component.text(mod.getMetadata().getName()).color(NamedTextColor.GREEN));
+                }
+            }
+        }
+
         for (final Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
             final Optional<Path> pluginPath = loadedPluginPath(plugin);
             if (pluginPath.isPresent() && bundledServerPlugins.contains(pluginPath.get())) {
@@ -86,6 +98,12 @@ public class HorizonPluginsCommand {
             .appendNewline()
             .append(Component.text("- [").color(NamedTextColor.DARK_GRAY))
             .append(appendPlugins(plugins, Type.HORIZON))
+            .append(Component.text("]").color(NamedTextColor.DARK_GRAY))
+            .appendNewline()
+            .append(Component.text("Fabric Mods:").color(NamedTextColor.GOLD))
+            .appendNewline()
+            .append(Component.text("- [").color(NamedTextColor.DARK_GRAY))
+            .append(appendPlugins(plugins, Type.FABRIC))
             .append(Component.text("]").color(NamedTextColor.DARK_GRAY))
             .appendNewline()
             .append(Component.text("Paper Plugins:").color(NamedTextColor.AQUA))
@@ -297,6 +315,12 @@ public class HorizonPluginsCommand {
         return ids;
     }
 
+    private static boolean isUserMod(final @NonNull ModContainer mod) {
+        return !mod.getMetadata().getType().equals("builtin")
+            && mod.getContainingMod().isEmpty()
+            && !mod.getMetadata().getId().equals("fabricloader");
+    }
+
     private static Component appendComponents(final @NonNull List<Component> components) {
         Component msg = Component.empty();
         for (int i = 0; i < components.size(); i++) {
@@ -320,6 +344,6 @@ public class HorizonPluginsCommand {
     }
 
     private enum Type {
-        HORIZON, PAPER, SPIGOT
+        HORIZON, FABRIC, PAPER, SPIGOT
     }
 }

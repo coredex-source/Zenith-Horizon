@@ -1,6 +1,7 @@
 package io.canvasmc.horizon.plugin.phase.impl;
 
 import io.canvasmc.horizon.HorizonLoader;
+import io.canvasmc.horizon.fabric.HorizonFabric;
 import io.canvasmc.horizon.plugin.LoadContext;
 import io.canvasmc.horizon.plugin.data.EntrypointObject;
 import io.canvasmc.horizon.plugin.data.HorizonPluginMetadata;
@@ -104,6 +105,9 @@ public class DiscoveryPhase implements Phase<Void, Set<Pair<FileJar, HorizonPlug
                         LOGGER.error(thrown, "Couldn't load server plugin {}", entry.get().getName());
                         return Optional.empty();
                     }
+                }
+                else if (jar.getJarEntry(HorizonFabric.MOD_METADATA) != null) {
+                    LOGGER.warn("Found Fabric mod {} in plugins dir, move it to the mods dir to load it", jarFile.getName());
                 }
                 return Optional.empty();
             }

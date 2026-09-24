@@ -153,7 +153,7 @@ public final class EmberClassLoader extends ClassLoader {
         this.transformationFilter = this.transformationFilter.and(transformationFilter);
     }
 
-    boolean hasClass(final @NonNull String name) {
+    public boolean hasClass(final @NonNull String name) {
         final String canonicalName = name.replace('/', '.');
         return this.findLoadedClass(canonicalName) != null;
     }

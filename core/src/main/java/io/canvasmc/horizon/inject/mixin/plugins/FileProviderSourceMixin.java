@@ -1,5 +1,6 @@
 package io.canvasmc.horizon.inject.mixin.plugins;
 
+import io.canvasmc.horizon.fabric.HorizonFabric;
 import io.papermc.paper.plugin.entrypoint.EntrypointHandler;
 import io.papermc.paper.plugin.provider.source.FileProviderSource;
 import org.slf4j.Logger;
@@ -25,6 +26,10 @@ public class FileProviderSourceMixin {
             if (file.getEntry("horizon.plugin.json") != null &&
                 (file.getEntry("plugin.yml") == null && file.getEntry("paper-plugin.yml") == null)) {
                 LOGGER.info("Found Horizon plugin, {}, ignoring", file.getName());
+                ci.cancel();
+            }
+            else if (file.getEntry(HorizonFabric.MOD_METADATA) != null &&
+                (file.getEntry("plugin.yml") == null && file.getEntry("paper-plugin.yml") == null)) {
                 ci.cancel();
             }
         }

@@ -64,9 +64,11 @@ to function correctly. The default file Horizon will search for is `server.jar`,
 
 ```yaml
 pluginsDirectory: plugins
+modsDirectory: mods
 serverJar: server.jar
 cacheLocation: cache/horizon
 extraPlugins: [ ]
+extraMods: [ ]
 serverName: horizon
 ```
 
@@ -83,6 +85,10 @@ have multiple server JARs and swap between the target Horizons they use.
   automatically by its internal mixin inject
 - The `pluginsDirectory` option should always point to your plugins directory for both Paper plugins and Horizon
   plugins; however, you can separate them if you need or want to.
+- The `modsDirectory` option points to the directory Horizon reads Fabric mods from, and `extraMods` allows for adding additional
+  individual Fabric mod jars.
+- Fabric mods are only supported on Minecraft 26.1 and newer.
+- `modsDirectory` can also be overridden with the `-DHorizon.modsDirectory` JVM argument.
 
 Once all options are configured to your liking, you can boot the Horizon JAR as usual, and your server will run with
 Horizon as its bootstrapper!
