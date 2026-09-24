@@ -235,6 +235,7 @@ public final class MixinLaunch {
 
         // finish plugin load, resolve mixin and wideners
         pluginLoader.finishPluginLoad(this.transformer);
+        HorizonFabric.bootstrapMixins();
 
         try {
             final Method method = MixinEnvironment.class.getDeclaredMethod("gotoPhase", MixinEnvironment.Phase.class);

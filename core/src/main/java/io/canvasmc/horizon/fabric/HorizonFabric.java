@@ -1,13 +1,16 @@
 package io.canvasmc.horizon.fabric;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.logger.Logger;
 import io.canvasmc.horizon.service.EmberClassLoader;
 import io.canvasmc.horizon.util.MinecraftVersion;
 import io.canvasmc.horizon.util.ServerProperties;
 import io.canvasmc.horizon.util.Util;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.FabricLoaderImpl;
 import net.fabricmc.loader.impl.FormattedException;
+import net.fabricmc.loader.impl.launch.FabricMixinBootstrap;
 import net.fabricmc.loader.impl.util.SystemProperties;
 import net.fabricmc.loader.impl.util.log.Log;
 import org.jspecify.annotations.NonNull;
@@ -64,8 +67,16 @@ public final class HorizonFabric {
 
         Log.init(new HorizonFabricLogHandler(LOGGER));
 
+        Path launchDirectory = Path.of("").toAbsolutePath();
+        ObjectNode paperOverrides;
+        try {
+            paperOverrides = PaperOverrides.load(launchDirectory, LOGGER);
+        } catch (IllegalArgumentException exception) {
+            throw Util.kill(exception.getMessage(), null);
+        }
+
         HorizonGameProvider provider = new HorizonGameProvider(
-            horizon.getVersionMeta(), List.of(gameJar), entrypoint, Path.of("").toAbsolutePath(), args
+            horizon.getVersionMeta(), List.of(gameJar), entrypoint, launchDirectory, args, paperOverrides
         );
         HorizonFabricLauncher launcher = new HorizonFabricLauncher(classLoader, classPath, entrypoint);
 
@@ -81,6 +92,14 @@ public final class HorizonFabric {
         }
 
         loaded = true;
+    }
+
+    public static void bootstrapMixins() {
+        if (!loaded) {
+            return;
+        }
+
+        FabricMixinBootstrap.init(EnvType.SERVER, FabricLoaderImpl.INSTANCE);
     }
 
     private static @NonNull List<Path> findMods(@NonNull ServerProperties properties) {

@@ -89,6 +89,8 @@ have multiple server JARs and swap between the target Horizons they use.
   individual Fabric mod jars.
 - Fabric mods are only supported on Minecraft 26.1 and newer.
 - `modsDirectory` can also be overridden with the `-DHorizon.modsDirectory` JVM argument.
+- Horizon generates a `config/horizon/paper-mod.defaults.json` file for default fabric mod overrides, users can put their own changes
+  in `config/horizon/paper-mod.json`.
 
 Once all options are configured to your liking, you can boot the Horizon JAR as usual, and your server will run with
 Horizon as its bootstrapper!

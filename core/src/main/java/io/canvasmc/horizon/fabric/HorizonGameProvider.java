@@ -1,5 +1,6 @@
 package io.canvasmc.horizon.fabric;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.canvasmc.horizon.util.PaperclipVersion;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
@@ -32,12 +33,14 @@ public final class HorizonGameProvider implements GameProvider {
     private final String entrypoint;
     private final Path launchDirectory;
     private final Arguments arguments;
+    private final ObjectNode paperOverrides;
 
-    public HorizonGameProvider(@NonNull PaperclipVersion version, @NonNull List<Path> gameJars, @NonNull String entrypoint, @NonNull Path launchDirectory, String @NonNull [] args) {
+    public HorizonGameProvider(@NonNull PaperclipVersion version, @NonNull List<Path> gameJars, @NonNull String entrypoint, @NonNull Path launchDirectory, String @NonNull [] args, @NonNull ObjectNode paperOverrides) {
         this.version = version;
         this.gameJars = List.copyOf(gameJars);
         this.entrypoint = entrypoint;
         this.launchDirectory = launchDirectory;
+        this.paperOverrides = paperOverrides;
         this.arguments = new Arguments();
         this.arguments.parse(args);
     }
@@ -73,7 +76,10 @@ public final class HorizonGameProvider implements GameProvider {
             throw new RuntimeException(exception);
         }
 
-        return List.of(new BuiltinMod(gameJars, metadata.build()));
+        return List.of(
+            new BuiltinMod(gameJars, metadata.build()),
+            new BuiltinMod(gameJars, PaperModMetadata.create(getNormalizedGameVersion(), paperOverrides, launchDirectory.resolve("config")))
+        );
     }
 
     @Override
