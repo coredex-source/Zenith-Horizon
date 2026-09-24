@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "horizon-testmod",
+  "version": "1.0.0-SNAPSHOT",
+  "name": "Horizon Test Mod",
+  "description": "Hello world",
+  "authors": [
+    "CanvasMC"
+  ],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.canvasmc.testmod.TestMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": ">=26.1"
+  }
+}

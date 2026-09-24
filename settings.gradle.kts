@@ -19,4 +19,6 @@ rootProject.name = "horizon"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include("core")
+include("fabric-loader")
 include("test-plugin")
+include("test-fabric-mod")

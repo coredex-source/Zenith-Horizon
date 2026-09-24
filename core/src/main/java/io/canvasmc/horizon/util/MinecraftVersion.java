@@ -258,6 +258,8 @@ public enum MinecraftVersion {
     V1_20_6("1.20.6", "1.20.6", 21, VersionType.STABLE),
     V1_20_6_RC1("1.20.6-rc1", "1.20.6 Release Candidate 1", 21, VersionType.RELEASE_CANDIDATE);
 
+    public static final MinecraftVersion FABRIC_MINIMUM = V26_1;
+
     private final String id;
     private final String name;
     private final int javaVersion;
