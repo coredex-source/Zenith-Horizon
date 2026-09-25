@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.MixinLaunch;
 import io.canvasmc.horizon.fabric.mixin.FabricMixinConfigs;
+import io.canvasmc.horizon.fabric.mixin.MixinPatches;
 import io.canvasmc.horizon.fabric.mixin.MixinQuarantine;
 import io.canvasmc.horizon.logger.Logger;
 import io.canvasmc.horizon.service.EmberClassLoader;
@@ -38,9 +39,12 @@ import java.util.stream.Stream;
 public final class HorizonFabric {
     public static final String MOD_METADATA = "fabric.mod.json";
     public static final String DISABLED_MIXINS = "horizon:disabled_mixins";
+    public static final String MIXIN_PATCHES = "horizon:mixin_patches";
 
     private static final Logger LOGGER = Logger.fork(HorizonLoader.LOGGER, "fabric");
     private static boolean loaded;
+    private static boolean lifecycleEvents;
+    private static RegistryState registryState = RegistryState.OPEN;
     private static Path launchDirectory;
 
     private HorizonFabric() {
@@ -48,6 +52,10 @@ public final class HorizonFabric {
 
     public static boolean isLoaded() {
         return loaded;
+    }
+
+    public static boolean hasLifecycleEvents() {
+        return lifecycleEvents;
     }
 
     public static void load(@NonNull EmberClassLoader classLoader, @NonNull Path gameJar, @NonNull String entrypoint, @NonNull List<Path> classPath, String @NonNull [] args) {
@@ -112,11 +120,13 @@ public final class HorizonFabric {
         }
 
         warnDuplicateClasses(loader);
+        MixinPatches.load(paperOverrides.path(MIXIN_PATCHES));
 
         if (properties.mixinQuarantine()) {
             MixinQuarantine.load(launchDirectory);
         }
 
+        lifecycleEvents = loader.isModLoaded("fabric-lifecycle-events-v1");
         loaded = true;
     }
 
@@ -130,6 +140,34 @@ public final class HorizonFabric {
         } catch (RuntimeException exception) {
             throw fail(FormattedException.ofLocalized("exception.initializerFailure", exception));
         }
+    }
+
+    public static @NonNull RegistryBootstrap registryBootstrap() {
+        if (!loaded) {
+            return RegistryBootstrap.RUN;
+        }
+
+        return switch (registryState) {
+            case OPEN -> {
+                LOGGER.debug("Pushing the registry freeze foeward until fabric mods are initialized");
+                registryState = RegistryState.DEFERRED;
+                yield RegistryBootstrap.DEFER;
+            }
+            case DEFERRED -> {
+                LOGGER.debug("Freezing registries");
+                registryState = RegistryState.FROZEN;
+                yield RegistryBootstrap.FREEZE;
+            }
+            case FROZEN -> RegistryBootstrap.SKIP;
+        };
+    }
+
+    public static boolean registryFreezePending() {
+        return registryState == RegistryState.DEFERRED;
+    }
+
+    public static boolean registriesOpen() {
+        return loaded && registryState != RegistryState.FROZEN;
     }
 
     public static void startServer() {
@@ -236,5 +274,18 @@ public final class HorizonFabric {
         if (System.getProperty(key) == null) {
             System.setProperty(key, value);
         }
+    }
+
+    public enum RegistryBootstrap {
+        RUN,
+        DEFER,
+        FREEZE,
+        SKIP
+    }
+
+    private enum RegistryState {
+        OPEN,
+        DEFERRED,
+        FROZEN
     }
 }

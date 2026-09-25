@@ -24,6 +24,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfig;
 import org.spongepowered.asm.service.MixinService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -76,6 +77,7 @@ public final class MixinPreflight {
     private static final Map<String, List<Member>> MERGED_METHODS = new HashMap<>();
     private static final Map<String, Declared> MIXINS = new HashMap<>();
     private static final Map<String, Set<String>> BROKEN = new TreeMap<>();
+    private static final Map<String, List<Adaptation>> ADAPTATIONS = new HashMap<>();
     private static boolean indexed;
 
     private MixinPreflight() {
@@ -115,6 +117,147 @@ public final class MixinPreflight {
         LOGGER.warn(header, mixinName, entry.modId(), entry.name(), targetName);
         problems.forEach((problem) -> LOGGER.warn("  - {}", problem));
         return policy == PreflightPolicy.WARN;
+    }
+
+    public static void adapt(@NonNull ClassNode mixin) {
+        FabricMixinConfigs.Entry entry = FabricMixinConfigs.ofMixin(mixin.name);
+        if (entry != null) {
+            adapt(entry, mixin);
+        }
+    }
+
+    private static synchronized void adapt(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin) {
+        List<Adaptation> adaptations = ADAPTATIONS.get(mixin.name);
+        if (adaptations == null) {
+            adaptations = adaptations(entry, mixin);
+            ADAPTATIONS.put(mixin.name, adaptations);
+        }
+
+        for (Adaptation adaptation : adaptations) {
+            for (MethodNode handler : mixin.methods) {
+                if (!handler.name.equals(adaptation.handler()) || !handler.desc.equals(adaptation.desc())) continue;
+
+                AnnotationNode inject = annotation(handler.visibleAnnotations, handler.invisibleAnnotations, INJECT);
+                if (inject != null && adaptation.method() != null) {
+                    MixinPatches.set(inject, "method", new ArrayList<>(List.of(adaptation.method())));
+                }
+                if (adaptation.returnable()) {
+                    MixinPatches.upgradeCallback(handler);
+                }
+                if (adaptation.positions() != null) {
+                    MixinPatches.reshape(handler, adaptation.parameters(), adaptation.positions());
+                }
+                break;
+            }
+        }
+    }
+
+    private static @NonNull List<Adaptation> adaptations(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin) {
+        AnnotationNode annotation = annotation(mixin.visibleAnnotations, mixin.invisibleAnnotations, MIXIN);
+        List<String> targets = annotation != null ? targets(annotation) : List.of();
+        ClassNode target = targets.size() == 1 ? classNode(targets.getFirst()) : null;
+        if (target == null) {
+            return List.of();
+        }
+
+        List<Adaptation> adaptations = new ArrayList<>();
+        for (MethodNode handler : mixin.methods) {
+            AnnotationNode inject = annotation(handler.visibleAnnotations, handler.invisibleAnnotations, INJECT);
+            List<String> selectors = inject != null && value(inject, "target") == null ? strings(value(inject, "method")) : List.of();
+            Selector selector = selectors.size() == 1 ? Selector.parse(selectors.getFirst()) : null;
+            if (selector == null || selector.all() || selector.name() == null) continue;
+
+            List<MethodNode> selected = selector.select(target, (handler.access & Opcodes.ACC_STATIC) != 0);
+            if (selected.isEmpty()) continue;
+
+            MethodNode method = selected.getFirst();
+            String retarget = null;
+            List<AnnotationNode> points = points(inject);
+            if (selector.desc() == null && points != null && evaluable(points) && !found(points, List.of(method))) {
+                MethodNode original = method;
+                List<MethodNode> candidates = target.methods.stream()
+                    .filter((candidate) -> candidate != original && candidate.name.equals(original.name) && found(points, List.of(candidate)))
+                    .toList();
+                if (candidates.size() != 1) continue;
+
+                method = candidates.getFirst();
+                retarget = method.name + method.desc;
+            }
+            if (retarget == null && selector.desc() == null) {
+                MethodNode delegate = delegate(target, method);
+                if (delegate != null) {
+                    method = delegate;
+                    retarget = method.name + method.desc;
+                }
+            }
+
+            Type[] arguments = Type.getArgumentTypes(handler.desc);
+            int callback = MixinPatches.callbackIndex(arguments);
+            if (callback == arguments.length) continue;
+
+            String expected = Type.getReturnType(method.desc).getSort() == Type.VOID ? CALLBACK_INFO : CALLBACK_INFO_RETURNABLE;
+            boolean returnable = false;
+            if (!arguments[callback].getInternalName().equals(expected)) {
+                if (!expected.equals(CALLBACK_INFO_RETURNABLE) || Boolean.TRUE.equals(value(inject, "cancellable"))) continue;
+                returnable = true;
+            }
+
+            Type[] parameters = Type.getArgumentTypes(method.desc);
+            int[] positions = callback == 0 ? null : align(handler, Arrays.copyOf(arguments, callback), parameters);
+            if (callback > 0 && positions == null) continue;
+            if (positions != null && callback == parameters.length) positions = null;
+            if (retarget == null && !returnable && positions == null) continue;
+
+            adaptations.add(new Adaptation(handler.name, handler.desc, retarget, returnable, List.of(parameters), positions));
+            LOGGER.info("Adapting @Inject {} in {} from {} to {}::{}{}", handler.name, mixin.name.replace('/', '.'), entry.modId(),
+                target.name.replace('/', '.'), method.name, method.desc);
+        }
+        return adaptations;
+    }
+
+    private static @Nullable MethodNode delegate(@NonNull ClassNode target, @NonNull MethodNode method) {
+        MethodInsnNode call = null;
+        for (AbstractInsnNode insn : method.instructions) {
+            if (insn instanceof InvokeDynamicInsnNode) return null;
+            if (!(insn instanceof MethodInsnNode invoke)) continue;
+            if (call != null) return null;
+            call = invoke;
+        }
+
+        if (call == null || !call.owner.equals(target.name) || !call.name.equals(method.name) || call.desc.equals(method.desc)
+            || !Type.getReturnType(call.desc).equals(Type.getReturnType(method.desc))) {
+            return null;
+        }
+
+        MethodInsnNode delegate = call;
+        return target.methods.stream()
+            .filter((candidate) -> candidate.name.equals(delegate.name) && candidate.desc.equals(delegate.desc)
+                && (candidate.access & Opcodes.ACC_STATIC) == (method.access & Opcodes.ACC_STATIC))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private static int @Nullable [] align(@NonNull MethodNode handler, Type @NonNull [] parameters, Type @NonNull [] target) {
+        for (int i = 0; i < parameters.length; i++) {
+            if (coerced(handler, i)) return null;
+        }
+
+        int[] leftmost = new int[parameters.length];
+        int position = 0;
+        for (int i = 0; i < parameters.length; i++) {
+            while (position < target.length && !target[position].equals(parameters[i])) position++;
+            if (position == target.length) return null;
+            leftmost[i] = position++;
+        }
+
+        int[] rightmost = new int[parameters.length];
+        position = target.length - 1;
+        for (int i = parameters.length - 1; i >= 0; i--) {
+            while (position >= 0 && !target[position].equals(parameters[i])) position--;
+            if (position < 0) return null;
+            rightmost[i] = position--;
+        }
+        return Arrays.equals(leftmost, rightmost) ? leftmost : null;
     }
 
     public static synchronized void finish() {
@@ -455,11 +598,7 @@ public final class MixinPreflight {
                 AnnotationNode annotation = mixin != null ? annotation(mixin.visibleAnnotations, mixin.invisibleAnnotations, MIXIN) : null;
                 if (annotation == null) continue;
 
-                List<String> targets = new ArrayList<>();
-                if (value(annotation, "value") instanceof List<?> types) {
-                    types.forEach((type) -> targets.add(((Type) type).getInternalName()));
-                }
-                strings(value(annotation, "targets")).forEach((type) -> targets.add(type.replace('.', '/')));
+                List<String> targets = targets(annotation);
                 MIXINS.put(mixin.name, new Declared(entry, targets));
 
                 for (FieldNode field : mixin.fields) {
@@ -475,6 +614,15 @@ public final class MixinPreflight {
         }
     }
 
+    private static @NonNull List<String> targets(@NonNull AnnotationNode annotation) {
+        List<String> targets = new ArrayList<>();
+        if (value(annotation, "value") instanceof List<?> types) {
+            types.forEach((type) -> targets.add(((Type) type).getInternalName()));
+        }
+        strings(value(annotation, "targets")).forEach((type) -> targets.add(type.replace('.', '/')));
+        return targets;
+    }
+
     private static boolean mergesInto(@NonNull MethodNode method) {
         for (AnnotationNode annotation : annotations(method.visibleAnnotations, method.invisibleAnnotations)) {
             if (annotation.desc.equals(SHADOW) || annotation.desc.equals(OVERWRITE) || INJECTORS.contains(annotation.desc)) return false;
@@ -483,13 +631,17 @@ public final class MixinPreflight {
     }
 
     private static @Nullable ClassNode classNode(@NonNull String name) {
-        return CLASSES.computeIfAbsent(name.replace('.', '/'), (key) -> {
+        String key = name.replace('.', '/');
+        Optional<ClassNode> cached = CLASSES.get(key);
+        if (cached == null) {
             try {
-                return Optional.of(MixinService.getService().getBytecodeProvider().getClassNode(key, true, ClassReader.SKIP_FRAMES));
+                cached = Optional.of(MixinService.getService().getBytecodeProvider().getClassNode(key, true, ClassReader.SKIP_FRAMES));
             } catch (Exception exception) {
-                return Optional.empty();
+                cached = Optional.empty();
             }
-        }).orElse(null);
+            CLASSES.put(key, cached);
+        }
+        return cached.orElse(null);
     }
 
     private static @Nullable AnnotationNode annotation(@Nullable List<AnnotationNode> visible, @Nullable List<AnnotationNode> invisible, @NonNull String descriptor) {
@@ -506,7 +658,18 @@ public final class MixinPreflight {
         return annotations;
     }
 
-    private static @Nullable Object value(@NonNull AnnotationNode annotation, @NonNull String key) {
+    static @Nullable AnnotationNode injector(@NonNull MethodNode method) {
+        for (AnnotationNode annotation : annotations(method.visibleAnnotations, method.invisibleAnnotations)) {
+            if (isInjector(annotation)) return annotation;
+        }
+        return null;
+    }
+
+    static boolean isInjector(@NonNull AnnotationNode annotation) {
+        return INJECTORS.contains(annotation.desc);
+    }
+
+    static @Nullable Object value(@NonNull AnnotationNode annotation, @NonNull String key) {
         if (annotation.values == null) return null;
 
         for (int i = 0; i < annotation.values.size() - 1; i += 2) {
@@ -530,6 +693,9 @@ public final class MixinPreflight {
     }
 
     private record Declared(FabricMixinConfigs.Entry entry, List<String> targets) {
+    }
+
+    private record Adaptation(String handler, String desc, @Nullable String method, boolean returnable, List<Type> parameters, int @Nullable [] positions) {
     }
 
     private record Selector(@Nullable String owner, @Nullable String name, @Nullable String desc, boolean all) {

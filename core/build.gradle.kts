@@ -21,6 +21,10 @@ repositories {
         name = "canvasReleases"
         url = uri("https://maven.canvasmc.io/releases")
     }
+    maven {
+        name = "fabric"
+        url = uri("https://maven.fabricmc.net/")
+    }
 }
 
 dependencies {
@@ -41,6 +45,10 @@ dependencies {
 
     // annotations -- compileOnly
     compileOnly(libs.jspecify)
+
+    // fabric api events bridged onto paper, only used when the mods are installed
+    compileOnly(libs.fabric.api.base) { isTransitive = false }
+    compileOnly(libs.fabric.lifecycle.events) { isTransitive = false }
 
     // spark mod for fabric, need its utils
     include(libs.spark.fabric) {

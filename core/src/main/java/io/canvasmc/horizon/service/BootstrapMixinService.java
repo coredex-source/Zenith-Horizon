@@ -4,6 +4,8 @@ import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.MixinLaunch;
 import io.canvasmc.horizon.fabric.FabricTransformationImpl;
 import io.canvasmc.horizon.fabric.mixin.FabricMixinConfigs;
+import io.canvasmc.horizon.fabric.mixin.MixinPatches;
+import io.canvasmc.horizon.fabric.mixin.MixinPreflight;
 import io.canvasmc.horizon.logger.Logger;
 import io.canvasmc.horizon.service.transform.TransformPhase;
 import io.canvasmc.horizon.transformer.MixinTransformationImpl;
@@ -273,7 +275,10 @@ public class BootstrapMixinService implements IMixinService, IClassProvider, ICl
         if (fabricTransformer == null || !fabricTransformer.shouldTransform(type, node)) return node;
 
         final ClassNode transformed = fabricTransformer.transform(type, node, TransformPhase.MIXIN);
-        return transformed != null ? transformed : node;
+        final ClassNode result = transformed != null ? transformed : node;
+        MixinPatches.apply(result);
+        MixinPreflight.adapt(result);
+        return result;
     }
 
     @Override

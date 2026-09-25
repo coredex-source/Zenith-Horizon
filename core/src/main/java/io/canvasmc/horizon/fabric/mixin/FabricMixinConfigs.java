@@ -39,6 +39,7 @@ public final class FabricMixinConfigs {
     private static final Map<String, String> MODS = new ConcurrentHashMap<>();
     private static final Map<String, Entry> BY_NAME = new ConcurrentHashMap<>();
     private static final Map<String, Entry> BY_PACKAGE = new ConcurrentHashMap<>();
+    private static final Map<String, Entry> BY_MIXIN = new ConcurrentHashMap<>();
     private static final Map<String, IMixinConfig> CONFIGS = new ConcurrentHashMap<>();
     private static final Map<String, Set<String>> DISABLED = new ConcurrentHashMap<>();
     private static final Set<String> SKIPPED = ConcurrentHashMap.newKeySet();
@@ -81,6 +82,10 @@ public final class FabricMixinConfigs {
         return MODS.get(config);
     }
 
+    public static @Nullable Entry ofMixin(@NonNull String internalName) {
+        return BY_MIXIN.get(internalName);
+    }
+
     public static @Nullable Entry claim(@NonNull String mixinPackage) {
         return BY_PACKAGE.get(mixinPackage);
     }
@@ -120,6 +125,7 @@ public final class FabricMixinConfigs {
             );
 
             BY_NAME.put(name, entry);
+            entry.mixins().forEach((mixin) -> BY_MIXIN.put(mixin.replace('.', '/'), entry));
             Entry existing = BY_PACKAGE.putIfAbsent(mixinPackage, entry);
             if (existing == null || existing.name().equals(name)) {
                 config.put("plugin", HorizonMixinConfigPlugin.class.getName());

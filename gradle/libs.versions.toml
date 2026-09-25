@@ -37,6 +37,9 @@ userdev = { module = "io.canvasmc.weaver.userdev:io.canvasmc.weaver.userdev.grad
 run-paper = { module = "xyz.jpenilla.run-paper:xyz.jpenilla.run-paper.gradle.plugin", version.ref = "run-paper" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 spark-fabric = { module = "me.lucko:spark-fabric", version.ref = "spark-fabric" }
+fabric-api-base = { module = "net.fabricmc.fabric-api:fabric-api-base", version = "2.0.6+fcdff87f5d" }
+fabric-command-api = { module = "net.fabricmc.fabric-api:fabric-command-api-v2", version = "3.1.2+fcdff87f5d" }
+fabric-lifecycle-events = { module = "net.fabricmc.fabric-api:fabric-lifecycle-events-v1", version = "4.1.9+ffef5f675d" }
 
 # for tests
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
