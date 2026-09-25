@@ -92,7 +92,8 @@ have multiple server JARs and swap between the target Horizons they use.
 - Fabric mods are only supported on Minecraft 26.1 and newer.
 - `modsDirectory` can also be overridden with the `-DHorizon.modsDirectory` JVM argument.
 - Horizon generates a `config/horizon/paper-mod.defaults.json` file for default fabric mod overrides, users can put their own changes
-  in `config/horizon/paper-mod.json`.
+  in `config/horizon/paper-mod.json`. Its `horizon:disabled_mixins` entry lists single mixins (by mod id) that Horizon
+  skips because they don't work on Paper.
 - Before loading mods Horizon checks every fabric mod mixin against the server. `mixinPreflight` decides what happens to
   mixins that don't match: `disable-mixin` (default) skips them with a warning, `fail` stops the server, and `warn` only
   logs them. It can also be set with the `-DHorizon.mixinPreflight` JVM argument.

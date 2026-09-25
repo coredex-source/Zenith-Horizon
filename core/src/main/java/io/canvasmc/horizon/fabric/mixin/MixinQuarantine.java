@@ -2,7 +2,6 @@ package io.canvasmc.horizon.fabric.mixin;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.logger.Logger;
@@ -18,7 +17,6 @@ import org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,7 +27,6 @@ public final class MixinQuarantine {
 
     private static final Logger LOGGER = Logger.fork(HorizonLoader.LOGGER, "mixin_quarantine");
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final List<String> MIXIN_KEYS = List.of("mixins", "server", "client");
 
     private static final Map<String, Quarantined> ENTRIES = new TreeMap<>();
     private static @Nullable Path file;
@@ -83,23 +80,14 @@ public final class MixinQuarantine {
         }
     }
 
-    public static synchronized void filter(@NonNull ObjectNode config, @NonNull String mixinPackage) {
-        if (ENTRIES.isEmpty()) {
-            return;
+    public static synchronized boolean skip(@NonNull String mixin) {
+        Quarantined quarantined = ENTRIES.get(mixin);
+        if (quarantined == null) {
+            return false;
         }
 
-        for (String key : MIXIN_KEYS) {
-            if (!(config.get(key) instanceof ArrayNode mixins)) continue;
-
-            for (int i = mixins.size() - 1; i >= 0; i--) {
-                String mixin = mixinPackage + "." + mixins.get(i).asText();
-                Quarantined quarantined = ENTRIES.get(mixin);
-                if (quarantined == null) continue;
-
-                mixins.remove(i);
-                LOGGER.warn("Skipping quarantined mixin {} from {}, as it failed on an earlier boot: {}", mixin, quarantined.mod(), quarantined.reason());
-            }
-        }
+        LOGGER.warn("Skipping quarantined mixin {} from {}, as it failed on an earlier boot: {}", mixin, quarantined.mod(), quarantined.reason());
+        return true;
     }
 
     public static @NonNull Throwable failure(@NonNull String target, @NonNull Throwable thrown) {

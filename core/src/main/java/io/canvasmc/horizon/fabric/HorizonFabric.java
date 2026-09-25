@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 public final class HorizonFabric {
     public static final String MOD_METADATA = "fabric.mod.json";
+    public static final String DISABLED_MIXINS = "horizon:disabled_mixins";
 
     private static final Logger LOGGER = Logger.fork(HorizonLoader.LOGGER, "fabric");
     private static boolean loaded;
@@ -85,6 +86,8 @@ public final class HorizonFabric {
         } catch (IllegalArgumentException exception) {
             throw Util.kill(exception.getMessage(), null);
         }
+
+        FabricMixinConfigs.disable(paperOverrides.path(DISABLED_MIXINS));
 
         HorizonGameProvider provider = new HorizonGameProvider(
             horizon.getVersionMeta(), List.of(gameJar), entrypoint, launchDirectory, args, paperOverrides
@@ -162,6 +165,7 @@ public final class HorizonFabric {
 
         FabricMixinBootstrap.init(EnvType.SERVER, FabricLoaderImpl.INSTANCE);
         FabricMixinConfigs.capture();
+        FabricMixinConfigs.warnUnmatched();
     }
 
     private static void warnDuplicateClasses(@NonNull FabricLoaderImpl loader) {
