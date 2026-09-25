@@ -69,6 +69,8 @@ serverJar: server.jar
 cacheLocation: cache/horizon
 extraPlugins: [ ]
 extraMods: [ ]
+mixinPreflight: disable-mixin
+mixinQuarantine: false
 serverName: horizon
 ```
 
@@ -91,6 +93,12 @@ have multiple server JARs and swap between the target Horizons they use.
 - `modsDirectory` can also be overridden with the `-DHorizon.modsDirectory` JVM argument.
 - Horizon generates a `config/horizon/paper-mod.defaults.json` file for default fabric mod overrides, users can put their own changes
   in `config/horizon/paper-mod.json`.
+- Before loading mods Horizon checks every fabric mod mixin against the server. `mixinPreflight` decides what happens to
+  mixins that don't match: `disable-mixin` (default) skips them with a warning, `fail` stops the server, and `warn` only
+  logs them. It can also be set with the `-DHorizon.mixinPreflight` JVM argument.
+- A fabric mod mixin that still fails while the server runs stops the server, like it does on Fabric. With
+  `mixinQuarantine: true` Horizon records it in `config/horizon/mixin-quarantine.json` and disables it to let the server boot while
+  showing a warning.
 
 Once all options are configured to your liking, you can boot the Horizon JAR as usual, and your server will run with
 Horizon as its bootstrapper!

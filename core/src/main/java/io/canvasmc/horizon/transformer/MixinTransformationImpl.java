@@ -1,5 +1,6 @@
 package io.canvasmc.horizon.transformer;
 
+import io.canvasmc.horizon.fabric.mixin.MixinQuarantine;
 import io.canvasmc.horizon.service.transform.TransformPhase;
 import io.canvasmc.horizon.service.transform.TransformationService;
 import org.jspecify.annotations.NonNull;
@@ -60,7 +61,15 @@ public final class MixinTransformationImpl implements TransformationService {
         }
 
         // transform via mixin
-        return this.transformer.transformClass(MixinEnvironment.getCurrentEnvironment(), type.getClassName(), node) ? node : null;
+        try {
+            return this.transformer.transformClass(MixinEnvironment.getCurrentEnvironment(), type.getClassName(), node) ? node : null;
+        } catch (Throwable thrown) {
+            throw MixinQuarantine.failure(type.getClassName(), thrown);
+        }
+    }
+
+    public boolean isSyntheticClass(final @NonNull String name) {
+        return this.registry != null && this.registry.findSyntheticClass(name) != null;
     }
 
     boolean shouldGenerateClass(final @NonNull Type type) {

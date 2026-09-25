@@ -1,6 +1,7 @@
 package io.canvasmc.horizon.service.transform;
 
 import io.canvasmc.horizon.HorizonLoader;
+import io.canvasmc.horizon.fabric.mixin.FabricMixinError;
 import io.canvasmc.horizon.plugin.types.HorizonPlugin;
 import io.canvasmc.horizon.transformer.MixinTransformationImpl;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -11,6 +12,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
+import org.spongepowered.asm.transformers.MixinClassWriter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -140,6 +142,8 @@ public final class ClassTransformer {
                     node = transformedNode;
                     transformed = true;
                 }
+            } catch (final FabricMixinError error) {
+                throw error;
             } catch (final Throwable throwable) {
                 LOGGER.error(throwable, "Failed to transform {} with {}", type.getClassName(), service.getClass().getName());
             }
@@ -147,7 +151,7 @@ public final class ClassTransformer {
 
         if (!transformed) return input;
 
-        final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        final ClassWriter writer = new MixinClassWriter(ClassWriter.COMPUTE_FRAMES);
         node.accept(writer);
 
         return writer.toByteArray();

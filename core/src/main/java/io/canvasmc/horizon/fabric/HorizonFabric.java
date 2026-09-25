@@ -2,14 +2,19 @@ package io.canvasmc.horizon.fabric;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.canvasmc.horizon.HorizonLoader;
+import io.canvasmc.horizon.MixinLaunch;
+import io.canvasmc.horizon.fabric.mixin.FabricMixinConfigs;
+import io.canvasmc.horizon.fabric.mixin.MixinQuarantine;
 import io.canvasmc.horizon.logger.Logger;
 import io.canvasmc.horizon.service.EmberClassLoader;
 import io.canvasmc.horizon.util.MinecraftVersion;
 import io.canvasmc.horizon.util.ServerProperties;
 import io.canvasmc.horizon.util.Util;
 import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.impl.FabricLoaderImpl;
 import net.fabricmc.loader.impl.FormattedException;
+import net.fabricmc.loader.impl.ModContainerImpl;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import net.fabricmc.loader.impl.game.minecraft.Hooks;
 import net.fabricmc.loader.impl.launch.FabricMixinBootstrap;
@@ -24,8 +29,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class HorizonFabric {
     public static final String MOD_METADATA = "fabric.mod.json";
@@ -94,6 +102,18 @@ public final class HorizonFabric {
             throw fail(exception);
         }
 
+        try {
+            loader.loadClassTweakers();
+        } catch (RuntimeException exception) {
+            throw Util.kill("Couldn't load Fabric class tweakers", exception);
+        }
+
+        warnDuplicateClasses(loader);
+
+        if (properties.mixinQuarantine()) {
+            MixinQuarantine.load(launchDirectory);
+        }
+
         loaded = true;
     }
 
@@ -134,7 +154,53 @@ public final class HorizonFabric {
             return;
         }
 
+        for (ModContainerImpl mod : FabricLoaderImpl.INSTANCE.getModsInternal()) {
+            for (String config : mod.getMetadata().getMixinConfigs(EnvType.SERVER)) {
+                FabricMixinConfigs.register(config, mod.getMetadata().getId());
+            }
+        }
+
         FabricMixinBootstrap.init(EnvType.SERVER, FabricLoaderImpl.INSTANCE);
+        FabricMixinConfigs.capture();
+    }
+
+    private static void warnDuplicateClasses(@NonNull FabricLoaderImpl loader) {
+        ClassLoader server = ClassLoader.getSystemClassLoader();
+        for (ModContainerImpl mod : loader.getModsInternal()) {
+            if (isBuiltin(mod)) continue;
+
+            Map<String, Integer> packages = new TreeMap<>();
+            for (Path root : mod.getRootPaths()) {
+                try (Stream<Path> files = Files.walk(root)) {
+                    files.map((file) -> root.relativize(file).toString().replace(File.separatorChar, '/'))
+                        .filter((name) -> name.endsWith(".class") && !name.startsWith("META-INF/") && !name.endsWith("-info.class"))
+                        .filter((name) -> isTransformable(name.substring(0, name.length() - 6).replace('/', '.')))
+                        .filter((name) -> server.getResource(name) != null)
+                        .forEach((name) -> packages.merge(name.contains("/") ? name.substring(0, name.lastIndexOf('/')).replace('/', '.') : "(default)", 1, Integer::sum));
+                } catch (IOException exception) {
+                    LOGGER.debug(exception, "Couldn't scan {} for duplicate classes", root);
+                }
+            }
+
+            if (packages.isEmpty()) continue;
+
+            String owner = mod.getContainingMod()
+                .map((parent) -> mod.getMetadata().getId() + " (in " + parent.getMetadata().getId() + ")")
+                .orElse(mod.getMetadata().getId());
+            LOGGER.warn("{} ships {} class/classes that the server already has, using {} instead.", owner,
+                packages.values().stream().mapToInt(Integer::intValue).sum(),
+                packages.entrySet().stream().map((entry) -> entry.getKey() + " (" + entry.getValue() + ")").collect(Collectors.joining(", ")));
+        }
+    }
+
+    private static boolean isBuiltin(@NonNull ModContainer mod) {
+        if (mod.getMetadata().getType().equals("builtin")) return true;
+        return mod.getContainingMod().map(HorizonFabric::isBuiltin).orElse(false);
+    }
+
+    private static boolean isTransformable(@NonNull String className) {
+        return EmberClassLoader.EXCLUDE_PACKAGES.stream().noneMatch(className::startsWith)
+            && !MixinLaunch.TRANSFORMATION_EXCLUDED_PATTERN.matcher(className).matches();
     }
 
     private static @NonNull List<Path> findMods(@NonNull ServerProperties properties) {

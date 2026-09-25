@@ -1,6 +1,7 @@
 package io.canvasmc.horizon.util;
 
 import io.canvasmc.horizon.HorizonLoader;
+import io.canvasmc.horizon.fabric.mixin.PreflightPolicy;
 import io.canvasmc.horizon.util.tree.Format;
 import io.canvasmc.horizon.util.tree.ObjectArray;
 import io.canvasmc.horizon.util.tree.ObjectTree;
@@ -36,7 +37,9 @@ public record ServerProperties(
     File serverJar,
     File cacheLocation,
     List<File> extraPlugins,
-    List<File> extraMods
+    List<File> extraMods,
+    PreflightPolicy mixinPreflight,
+    boolean mixinQuarantine
 ) {
     private static final Pattern ADD_PLUGIN_PATTERN =
         Pattern.compile("^--?add-(plugin|extra-plugin-jar)=(.+)$");
@@ -88,6 +91,8 @@ public record ServerProperties(
                 .put("cacheLocation", "cache/horizon")
                 .put("extraPlugins", List.of())
                 .put("extraMods", List.of())
+                .put("mixinPreflight", PreflightPolicy.DISABLE_MIXIN.id())
+                .put("mixinQuarantine", false)
                 .build();
 
             // create default if not exist
@@ -114,6 +119,8 @@ public record ServerProperties(
                 .registerOverrideKey("pluginsDirectory", "Horizon.pluginsDirectory")
                 .registerOverrideKey("modsDirectory", "Horizon.modsDirectory")
                 .registerOverrideKey("cacheLocation", "Horizon.cacheLocation")
+                .registerOverrideKey("mixinPreflight", "Horizon.mixinPreflight")
+                .registerOverrideKey("mixinQuarantine", "Horizon.mixinQuarantine")
                 .registerDeserializer(ServerProperties.class, tree1 -> new ServerProperties(
                     tree1.getValueOrThrow("pluginsDirectory").as(File.class),
                     tree1.getValueOptional("modsDirectory")
@@ -122,7 +129,13 @@ public record ServerProperties(
                     tree1.getValueOrThrow("serverJar").as(File.class),
                     tree1.getValueOrThrow("cacheLocation").as(File.class),
                     extractExtraPlugins(tree1, args),
-                    extractExtraMods(tree1)
+                    extractExtraMods(tree1),
+                    PreflightPolicy.byId(tree1.getValueOptional("mixinPreflight")
+                        .map((value) -> value.asString())
+                        .orElseGet(() -> System.getProperty("Horizon.mixinPreflight", PreflightPolicy.DISABLE_MIXIN.id()))),
+                    tree1.getValueOptional("mixinQuarantine")
+                        .map((value) -> value.asBoolean())
+                        .orElseGet(() -> Boolean.getBoolean("Horizon.mixinQuarantine"))
                 ))
                 .from(new FileReader(file));
 

@@ -1,0 +1,5 @@
+classTweaker v1 official
+accessible field net/minecraft/server/MinecraftServer random Lnet/minecraft/util/RandomSource;
+mutable field net/minecraft/server/MinecraftServer random Lnet/minecraft/util/RandomSource;
+accessible method net/minecraft/server/MinecraftServer logFullTickTime ()V
+inject-interface net/minecraft/server/MinecraftServer io/canvasmc/testmod/ServerExtension

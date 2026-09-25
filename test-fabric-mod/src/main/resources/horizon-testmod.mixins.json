@@ -3,6 +3,7 @@
   "package": "io.canvasmc.testmod.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "MinecraftServerAccessor",
     "MinecraftServerMixin"
   ],
   "injectors": {

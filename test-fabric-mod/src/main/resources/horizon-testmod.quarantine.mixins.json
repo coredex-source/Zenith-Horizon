@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "io.canvasmc.testmod.mixin.quarantine",
+  "compatibilityLevel": "JAVA_25",
+  "plugin": "io.canvasmc.testmod.mixin.quarantine.QuarantinePlugin",
+  "mixins": [
+    "ConstantMinecraftServerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

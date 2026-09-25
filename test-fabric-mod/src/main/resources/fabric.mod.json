@@ -25,8 +25,11 @@
     ]
   },
   "mixins": [
-    "horizon-testmod.mixins.json"
+    "horizon-testmod.mixins.json",
+    "horizon-testmod.preflight.mixins.json",
+    "horizon-testmod.quarantine.mixins.json"
   ],
+  "accessWidener": "horizon-testmod.classtweaker",
   "depends": {
     "fabricloader": ">=0.19.5",
     "minecraft": ">=26.1"

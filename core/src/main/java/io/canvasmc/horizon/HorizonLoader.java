@@ -1,5 +1,6 @@
 package io.canvasmc.horizon;
 
+import io.canvasmc.horizon.fabric.FabricTransformationImpl;
 import io.canvasmc.horizon.instrument.JavaInstrumentation;
 import io.canvasmc.horizon.instrument.JavaInstrumentationImpl;
 import io.canvasmc.horizon.instrument.patch.ServerPatcherEntrypoint;
@@ -119,6 +120,7 @@ public class HorizonLoader {
                     version,
                     new ArrayList<>(),
                     List.of(
+                        FabricTransformationImpl.class.getName(),
                         AccessTransformationImpl.class.getName(),
                         MixinTransformationImpl.class.getName()
                     ),

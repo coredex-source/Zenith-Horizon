@@ -3,6 +3,7 @@ package io.canvasmc.horizon.service;
 import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.service.transform.ClassTransformer;
 import io.canvasmc.horizon.service.transform.TransformPhase;
+import io.canvasmc.horizon.transformer.MixinTransformationImpl;
 import io.canvasmc.horizon.util.DummyClassLoader;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -36,7 +37,7 @@ import static java.util.Objects.requireNonNull;
  * @author vectrix
  */
 public final class EmberClassLoader extends ClassLoader {
-    private static final List<String> EXCLUDE_PACKAGES = Arrays.asList(
+    public static final List<String> EXCLUDE_PACKAGES = Arrays.asList(
         "java.", "javax.", "com.sun.", "org.objectweb.asm."
     );
 
@@ -290,8 +291,12 @@ public final class EmberClassLoader extends ClassLoader {
     }
 
     @Nullable ClassData transformData(final @NonNull String name, final @NonNull TransformPhase phase) {
-        final ClassData data = this.classData(name, phase);
-        if (data == null) return null;
+        ClassData data = this.classData(name, phase);
+        if (data == null) {
+            final MixinTransformationImpl mixin = this.transformer.getService(MixinTransformationImpl.class);
+            if (mixin == null || !mixin.isSyntheticClass(name)) return null;
+            data = new ClassData(new byte[0], null, null);
+        }
 
         // Prevent transforming classes that are excluded from transformation.
         if (!this.transformationFilter.test(name)) {
@@ -301,6 +306,7 @@ public final class EmberClassLoader extends ClassLoader {
 
         // Run the transformation.
         final byte[] bytes = this.transformer.transformBytes(name, data.data(), phase);
+        if (bytes.length == 0) return null;
         return new ClassData(bytes, data.manifest(), data.source());
     }
 

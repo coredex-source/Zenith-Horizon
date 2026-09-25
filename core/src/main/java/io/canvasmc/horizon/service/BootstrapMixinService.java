@@ -2,12 +2,15 @@ package io.canvasmc.horizon.service;
 
 import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.MixinLaunch;
+import io.canvasmc.horizon.fabric.FabricTransformationImpl;
+import io.canvasmc.horizon.fabric.mixin.FabricMixinConfigs;
 import io.canvasmc.horizon.logger.Logger;
 import io.canvasmc.horizon.service.transform.TransformPhase;
 import io.canvasmc.horizon.transformer.MixinTransformationImpl;
 import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 import org.spongepowered.asm.logging.ILogger;
@@ -35,6 +38,7 @@ public class BootstrapMixinService implements IMixinService, IClassProvider, ICl
     private final ReEntranceLock lock;
     private final MixinContainerHandle container;
     private final MixinTransformationImpl mixinTransformer;
+    private final FabricTransformationImpl fabricTransformer;
 
     private boolean isInit = true;
     private int totalProcessedDuringInit = 0;
@@ -54,6 +58,7 @@ public class BootstrapMixinService implements IMixinService, IClassProvider, ICl
         if (mixinTransformer == null) {
             throw new IllegalStateException("Mixin transformation service not available?");
         }
+        this.fabricTransformer = HorizonLoader.getInstance().getLaunchService().getTransformer().getService(FabricTransformationImpl.class);
     }
 
     @ApiStatus.Internal
@@ -176,7 +181,7 @@ public class BootstrapMixinService implements IMixinService, IClassProvider, ICl
     @Override
     public InputStream getResourceAsStream(final @NonNull String name) {
         final EmberClassLoader loader = HorizonLoader.getInstance().getLaunchService().getClassLoader();
-        return loader.getResourceAsStream(name);
+        return FabricMixinConfigs.rewrite(name, loader.getResourceAsStream(name));
     }
 
     @Override
@@ -263,7 +268,12 @@ public class BootstrapMixinService implements IMixinService, IClassProvider, ICl
             else throw new ClassNotFoundException(canonicalName);
         }
 
-        return mixinTransformer.classNode(canonicalName, internalName, entry.data(), readerFlags);
+        final ClassNode node = mixinTransformer.classNode(canonicalName, internalName, entry.data(), readerFlags);
+        final Type type = Type.getObjectType(internalName);
+        if (fabricTransformer == null || !fabricTransformer.shouldTransform(type, node)) return node;
+
+        final ClassNode transformed = fabricTransformer.transform(type, node, TransformPhase.MIXIN);
+        return transformed != null ? transformed : node;
     }
 
     @Override
