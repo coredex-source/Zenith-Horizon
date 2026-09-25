@@ -10,6 +10,8 @@ import io.canvasmc.horizon.util.Util;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.FabricLoaderImpl;
 import net.fabricmc.loader.impl.FormattedException;
+import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
+import net.fabricmc.loader.impl.game.minecraft.Hooks;
 import net.fabricmc.loader.impl.launch.FabricMixinBootstrap;
 import net.fabricmc.loader.impl.util.SystemProperties;
 import net.fabricmc.loader.impl.util.log.Log;
@@ -30,6 +32,7 @@ public final class HorizonFabric {
 
     private static final Logger LOGGER = Logger.fork(HorizonLoader.LOGGER, "fabric");
     private static boolean loaded;
+    private static Path launchDirectory;
 
     private HorizonFabric() {
     }
@@ -67,7 +70,7 @@ public final class HorizonFabric {
 
         Log.init(new HorizonFabricLogHandler(LOGGER));
 
-        Path launchDirectory = Path.of("").toAbsolutePath();
+        launchDirectory = Path.of("").toAbsolutePath();
         ObjectNode paperOverrides;
         try {
             paperOverrides = PaperOverrides.load(launchDirectory, LOGGER);
@@ -88,10 +91,42 @@ public final class HorizonFabric {
             loader.load();
             loader.freeze();
         } catch (FormattedException exception) {
-            throw Util.kill(exception.getMainText(), exception.getMessage() != null ? exception : exception.getCause());
+            throw fail(exception);
         }
 
         loaded = true;
+    }
+
+    public static void invokePreLaunch() {
+        if (!loaded) {
+            return;
+        }
+
+        try {
+            FabricLoaderImpl.INSTANCE.invokeEntrypoints("preLaunch", PreLaunchEntrypoint.class, PreLaunchEntrypoint::onPreLaunch);
+        } catch (RuntimeException exception) {
+            throw fail(FormattedException.ofLocalized("exception.initializerFailure", exception));
+        }
+    }
+
+    public static void startServer() {
+        if (!loaded) {
+            return;
+        }
+
+        Hooks.startServer(launchDirectory.toFile(), null);
+    }
+
+    public static void setGameInstance(@NonNull Object gameInstance) {
+        if (!loaded) {
+            return;
+        }
+
+        Hooks.setGameInstance(gameInstance);
+    }
+
+    private static @NonNull InternalError fail(@NonNull FormattedException exception) {
+        return Util.kill(exception.getMainText(), exception.getMessage() != null ? exception : exception.getCause());
     }
 
     public static void bootstrapMixins() {

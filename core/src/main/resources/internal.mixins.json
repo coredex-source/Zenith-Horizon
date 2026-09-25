@@ -7,6 +7,8 @@
     "commandinject.PaperCommandsMixin",
     "commandinject.ReloadCommandMixin",
     "datapack.ServerPacksSourceMixin",
+    "fabric.DedicatedServerMixin",
+    "fabric.MainMixin",
     "jij.PluginInitializerManagerMixin",
     "plugins.FileProviderSourceMixin",
     "plugins.mixin.PaperSimplePluginClassLoaderMixin",

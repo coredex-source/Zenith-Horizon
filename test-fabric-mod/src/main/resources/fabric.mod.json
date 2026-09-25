@@ -9,10 +9,24 @@
   ],
   "environment": "*",
   "entrypoints": {
+    "preLaunch": [
+      "io.canvasmc.testmod.TestPreLaunch"
+    ],
     "main": [
-      "io.canvasmc.testmod.TestMod"
+      "io.canvasmc.testmod.TestMod",
+      "io.canvasmc.testmod.TestEntrypoints::onMain"
+    ],
+    "server": [
+      "io.canvasmc.testmod.TestServerMod",
+      "io.canvasmc.testmod.TestEntrypoints::SERVER"
+    ],
+    "horizon-testmod:custom": [
+      "io.canvasmc.testmod.TestEntrypoints::onCustom"
     ]
   },
+  "mixins": [
+    "horizon-testmod.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.19.5",
     "minecraft": ">=26.1"

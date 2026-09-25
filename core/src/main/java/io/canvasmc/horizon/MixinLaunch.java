@@ -99,6 +99,7 @@ public final class MixinLaunch {
 
         HorizonFabric.load(this.classLoader, this.context.gameJar, this.mainClass(), Arrays.asList(this.context.initialGameConnections), this.context.args);
         prepareMixin(HorizonLoader.getInstance().pluginLoader);
+        HorizonFabric.invokePreLaunch();
 
         try {
             if (Files.exists(this.context.gameJar)) {
