@@ -1,0 +1,38 @@
+{
+  "horizon:disabled_mixins": {
+    "fabric-data-generation-api-v1": [
+      "net.fabricmc.fabric.mixin.datagen.server.MainMixin"
+    ]
+  },
+  "horizon:mixin_patches": {
+    "fabric-lifecycle-events-v1": {
+      "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#afterShutdownServer": {
+        "at": {
+          "value": "INVOKE",
+          "target": "Lnet/minecraft/server/MinecraftServer;onServerExit()V"
+        }
+      },
+      "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#onLoadWorld": {
+        "method": "addLevel"
+      },
+      "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#onUnloadWorldAtShutdown": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.event.lifecycle.PlayerListMixin#hookOnDataPacksReloaded": {
+        "at": {
+          "target": "Lnet/minecraft/server/players/PlayerList;reloadTagData()V"
+        }
+      }
+    },
+    "fabric-permission-api-v1": {
+      "net.fabricmc.fabric.mixin.permission.CommandSourceStackMixin#copyOriginalOwner": {
+        "method": "/^with/ desc=/Lnet.minecraft.commands.CommandSourceStack;$/"
+      }
+    },
+    "fabric-registry-sync-v0": {
+      "net.fabricmc.fabric.mixin.registry.sync.BootstrapMixin#delayRegistryFreeze": {
+        "disable": true
+      }
+    }
+  }
+}

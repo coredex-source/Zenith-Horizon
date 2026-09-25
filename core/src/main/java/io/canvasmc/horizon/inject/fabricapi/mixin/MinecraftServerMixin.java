@@ -1,7 +1,7 @@
-package io.canvasmc.horizon.inject.mixin.fabric;
+package io.canvasmc.horizon.inject.fabricapi.mixin;
 
 import io.canvasmc.horizon.fabric.HorizonFabric;
-import io.canvasmc.horizon.inject.fabric.FabricEvents;
+import io.canvasmc.horizon.inject.fabricapi.FabricEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;

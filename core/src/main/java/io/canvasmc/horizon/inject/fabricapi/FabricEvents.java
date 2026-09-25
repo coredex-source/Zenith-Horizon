@@ -1,4 +1,4 @@
-package io.canvasmc.horizon.inject.fabric;
+package io.canvasmc.horizon.inject.fabricapi;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;

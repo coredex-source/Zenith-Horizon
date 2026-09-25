@@ -126,7 +126,7 @@ public class HorizonLoader {
                     ),
                     List.of("CanvasMC"),
                     false,
-                    List.of("internal.mixins.json"),
+                    List.of("internal.mixins.json", "fabric-api.mixins.json"),
                     List.of("internal.at"),
                     ObjectTree.builder().build(),
                     new HorizonPluginMetadata.NestedData(Set.of(), Set.of(), Set.of())

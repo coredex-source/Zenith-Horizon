@@ -1,0 +1,9 @@
+{
+  "mixins": [
+    "LevelChunkMixin",
+    "MinecraftServerMixin"
+  ],
+  "package": "io.canvasmc.horizon.inject.fabricapi.mixin",
+  "mixinPriority": 1,
+  "compatibilityLevel": "JAVA_21"
+}

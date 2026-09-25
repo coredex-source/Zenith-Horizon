@@ -42,57 +42,9 @@
     "mixin.world.temperature_cache": false,
     "mixin.world.tick_scheduler": false
   },
-  "ferritecore:disabled_options": [
-    "replaceNeighborLookup",
-    "replacePropertyMap",
-    "blockstateCacheDeduplication"
-  ],
   "horizon:disabled_mixins": {
-    "chunky": [
-      "org.popcraft.chunky.mixin.MinecraftServerMixin",
-      "org.popcraft.chunky.mixin.ServerLevelMixin"
-    ],
-    "fabric-data-generation-api-v1": [
-      "net.fabricmc.fabric.mixin.datagen.server.MainMixin"
-    ],
     "lithium": [
       "net.caffeinemc.mods.lithium.mixin.util.accessors.ServerLevelAccessor"
-    ],
-    "vmp": [
-      "com.ishland.vmp.mixins.networking.no_flush.MixinClientConnection",
-      "com.ishland.vmp.mixins.playerwatching.*",
-      "com.ishland.vmp.mixins.ticketsystem.*"
     ]
-  },
-  "horizon:mixin_patches": {
-    "fabric-lifecycle-events-v1": {
-      "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#afterShutdownServer": {
-        "at": {
-          "value": "INVOKE",
-          "target": "Lnet/minecraft/server/MinecraftServer;onServerExit()V"
-        }
-      },
-      "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#onLoadWorld": {
-        "method": "addLevel"
-      },
-      "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#onUnloadWorldAtShutdown": {
-        "disable": true
-      },
-      "net.fabricmc.fabric.mixin.event.lifecycle.PlayerListMixin#hookOnDataPacksReloaded": {
-        "at": {
-          "target": "Lnet/minecraft/server/players/PlayerList;reloadTagData()V"
-        }
-      }
-    },
-    "fabric-permission-api-v1": {
-      "net.fabricmc.fabric.mixin.permission.CommandSourceStackMixin#copyOriginalOwner": {
-        "method": "/^with/ desc=/Lnet.minecraft.commands.CommandSourceStack;$/"
-      }
-    },
-    "fabric-registry-sync-v0": {
-      "net.fabricmc.fabric.mixin.registry.sync.BootstrapMixin#delayRegistryFreeze": {
-        "disable": true
-      }
-    }
   }
 }

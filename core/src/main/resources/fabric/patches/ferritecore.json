@@ -1,0 +1,7 @@
+{
+  "ferritecore:disabled_options": [
+    "replaceNeighborLookup",
+    "replacePropertyMap",
+    "blockstateCacheDeduplication"
+  ]
+}

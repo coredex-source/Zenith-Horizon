@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.logger.Logger;
 import org.jspecify.annotations.NonNull;
 
@@ -14,13 +15,17 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public final class PaperOverrides {
     public static final String DEFAULTS_FILE = "paper-mod.defaults.json";
     public static final String OVERRIDES_FILE = "paper-mod.json";
 
-    private static final String DEFAULTS_RESOURCE = "/fabric/paper-overrides.json";
+    private static final String PATCHES = "fabric/patches/";
     private static final String REMOVE_PREFIX = "-";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -36,23 +41,16 @@ public final class PaperOverrides {
     public static @NonNull ObjectNode load(@NonNull Path launchDirectory, @NonNull Logger logger) {
         Path directory = launchDirectory.resolve("config").resolve("horizon");
         Path overridesFile = directory.resolve(OVERRIDES_FILE);
-        byte[] defaults = readDefaults();
+        ObjectNode merged = readDefaults();
 
         try {
             Files.createDirectories(directory);
-            Files.write(directory.resolve(DEFAULTS_FILE), defaults);
+            Files.write(directory.resolve(DEFAULTS_FILE), MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(merged));
             if (Files.notExists(overridesFile)) {
                 Files.writeString(overridesFile, "{\n}\n");
             }
         } catch (IOException exception) {
             throw new UncheckedIOException("Couldn't write the Paper overrides to " + directory, exception);
-        }
-
-        ObjectNode merged;
-        try {
-            merged = (ObjectNode) MAPPER.readTree(defaults);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Couldn't read " + DEFAULTS_RESOURCE, exception);
         }
 
         PaperOverrides overrides = new PaperOverrides(logger, launchDirectory.relativize(overridesFile).toString());
@@ -63,14 +61,38 @@ public final class PaperOverrides {
         return merged;
     }
 
-    private static byte @NonNull [] readDefaults() {
-        try (InputStream input = PaperOverrides.class.getResourceAsStream(DEFAULTS_RESOURCE)) {
-            if (input == null) {
-                throw new IllegalStateException("Missing " + DEFAULTS_RESOURCE);
+    private static @NonNull ObjectNode readDefaults() {
+        JarFile jar = HorizonLoader.getInternalPlugin().file().jarFile();
+        List<JarEntry> patches = jar.stream()
+            .filter((entry) -> entry.getName().startsWith(PATCHES) && entry.getName().endsWith(".json"))
+            .sorted(Comparator.comparing(JarEntry::getName))
+            .toList();
+
+        ObjectNode defaults = MAPPER.createObjectNode();
+        for (JarEntry patch : patches) {
+            try (InputStream input = jar.getInputStream(patch)) {
+                combine(defaults, (ObjectNode) MAPPER.readTree(input));
+            } catch (IOException | ClassCastException exception) {
+                throw new IllegalStateException("Couldn't read " + patch.getName(), exception);
             }
-            return input.readAllBytes();
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Couldn't read " + DEFAULTS_RESOURCE, exception);
+        }
+        return defaults;
+    }
+
+    private static void combine(@NonNull ObjectNode target, @NonNull ObjectNode source) {
+        for (Map.Entry<String, JsonNode> entry : source.properties()) {
+            JsonNode current = target.get(entry.getKey());
+            if (current instanceof ObjectNode object && entry.getValue() instanceof ObjectNode other) {
+                combine(object, other);
+            }
+            else if (current instanceof ArrayNode array && entry.getValue() instanceof ArrayNode other) {
+                other.forEach((element) -> {
+                    if (!contains(array, element)) array.add(element);
+                });
+            }
+            else {
+                target.set(entry.getKey(), entry.getValue().deepCopy());
+            }
         }
     }
 
@@ -109,7 +131,7 @@ public final class PaperOverrides {
                 changes++;
             }
             else if (current.isObject() && override.isObject()) {
-                mergeObject((ObjectNode) current, (ObjectNode) override);
+                merge((ObjectNode) current, (ObjectNode) override);
             }
             else if (current.isArray() && override.isArray()) {
                 mergeArray(key, (ArrayNode) current, (ArrayNode) override);
@@ -122,18 +144,6 @@ public final class PaperOverrides {
                 throw new IllegalArgumentException("Invalid " + source + ": \"" + key + "\" must be "
                     + (current.isObject() ? "an object" : current.isArray() ? "an array" : "a single value")
                     + " to change the default");
-            }
-        }
-    }
-
-    private void mergeObject(@NonNull ObjectNode target, @NonNull ObjectNode overrides) {
-        for (Map.Entry<String, JsonNode> entry : overrides.properties()) {
-            if (entry.getValue().isNull()) {
-                if (target.remove(entry.getKey()) != null) changes++;
-            }
-            else if (!entry.getValue().equals(target.get(entry.getKey()))) {
-                target.set(entry.getKey(), entry.getValue());
-                changes++;
             }
         }
     }

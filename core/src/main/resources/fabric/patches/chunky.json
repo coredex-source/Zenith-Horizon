@@ -1,0 +1,8 @@
+{
+  "horizon:disabled_mixins": {
+    "chunky": [
+      "org.popcraft.chunky.mixin.MinecraftServerMixin",
+      "org.popcraft.chunky.mixin.ServerLevelMixin"
+    ]
+  }
+}

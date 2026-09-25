@@ -1,0 +1,9 @@
+{
+  "horizon:disabled_mixins": {
+    "vmp": [
+      "com.ishland.vmp.mixins.networking.no_flush.MixinClientConnection",
+      "com.ishland.vmp.mixins.playerwatching.*",
+      "com.ishland.vmp.mixins.ticketsystem.*"
+    ]
+  }
+}
