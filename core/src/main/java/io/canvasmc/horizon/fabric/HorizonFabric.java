@@ -40,10 +40,13 @@ public final class HorizonFabric {
     public static final String MOD_METADATA = "fabric.mod.json";
     public static final String DISABLED_MIXINS = "horizon:disabled_mixins";
     public static final String MIXIN_PATCHES = "horizon:mixin_patches";
+    public static final String PLUGIN_CONFLICTS = "horizon:plugin_conflicts";
 
     private static final Logger LOGGER = Logger.fork(HorizonLoader.LOGGER, "fabric");
     private static boolean loaded;
     private static boolean lifecycleEvents;
+    private static boolean networking;
+    private static boolean interactionEvents;
     private static RegistryState registryState = RegistryState.OPEN;
     private static Path launchDirectory;
 
@@ -56,6 +59,14 @@ public final class HorizonFabric {
 
     public static boolean hasLifecycleEvents() {
         return lifecycleEvents;
+    }
+
+    public static boolean hasNetworking() {
+        return networking;
+    }
+
+    public static boolean hasInteractionEvents() {
+        return interactionEvents;
     }
 
     public static void load(@NonNull EmberClassLoader classLoader, @NonNull Path gameJar, @NonNull String entrypoint, @NonNull List<Path> classPath, String @NonNull [] args) {
@@ -120,6 +131,7 @@ public final class HorizonFabric {
         }
 
         warnDuplicateClasses(loader);
+        PluginConflicts.check(paperOverrides.path(PLUGIN_CONFLICTS), properties.pluginsDirectory().toPath(), loader);
         MixinPatches.load(paperOverrides.path(MIXIN_PATCHES));
 
         if (properties.mixinQuarantine()) {
@@ -127,6 +139,8 @@ public final class HorizonFabric {
         }
 
         lifecycleEvents = loader.isModLoaded("fabric-lifecycle-events-v1");
+        networking = loader.isModLoaded("fabric-networking-api-v1");
+        interactionEvents = loader.isModLoaded("fabric-events-interaction-v0");
         loaded = true;
     }
 

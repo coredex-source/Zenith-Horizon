@@ -1,0 +1,11 @@
+{
+  "horizon:plugin_conflicts": {
+    "worldedit": {
+      "plugins": [
+        "WorldEdit",
+        "FastAsyncWorldEdit"
+      ],
+      "reason": "both register the WorldEdit commands (//wand, //set, ...) and the worldedit:cui channel, keep only one of them"
+    }
+  }
+}

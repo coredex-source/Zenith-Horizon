@@ -1,0 +1,10 @@
+{
+  "horizon:plugin_conflicts": {
+    "luckperms": {
+      "plugins": [
+        "LuckPerms"
+      ],
+      "reason": "Horizon already answers Fabric permission checks from Bukkit, so LuckPerms-Bukkit covers mods too, remove the Fabric mod"
+    }
+  }
+}

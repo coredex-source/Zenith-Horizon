@@ -20,6 +20,15 @@ public class TestMod implements ModInitializer {
         if (FabricLoader.getInstance().isModLoaded("fabric-lifecycle-events-v1") && FabricLoader.getInstance().isModLoaded("fabric-command-api-v2")) {
             TestFabricApi.register();
         }
+        if (FabricLoader.getInstance().isModLoaded("fabric-events-interaction-v0")) {
+            TestInteraction.register();
+        }
+        if (FabricLoader.getInstance().isModLoaded("fabric-networking-api-v1")) {
+            TestNetworking.register();
+        }
+        if (FabricLoader.getInstance().isModLoaded("fabric-permission-api-v1") && FabricLoader.getInstance().isModLoaded("fabric-command-api-v2")) {
+            TestPermissions.register();
+        }
         Registry.register(BuiltInRegistries.SOUND_EVENT, TEST_SOUND, SoundEvent.createVariableRangeEvent(TEST_SOUND));
         LOGGER.info("registered {} in main", TEST_SOUND);
     }

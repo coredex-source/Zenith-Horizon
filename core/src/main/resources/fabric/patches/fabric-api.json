@@ -5,6 +5,17 @@
     ]
   },
   "horizon:mixin_patches": {
+    "fabric-events-interaction-v0": {
+      "net.fabricmc.fabric.mixin.event.interaction.ServerGamePacketListenerImplMixin#onPickItemFromBlock": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.event.interaction.ServerGamePacketListenerImplMixin#onPickItemFromEntity": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.event.interaction.ServerGamePacketListenerImplMixin#tryPickItem": {
+        "disable": true
+      }
+    },
     "fabric-lifecycle-events-v1": {
       "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#afterShutdownServer": {
         "at": {
@@ -22,6 +33,11 @@
         "at": {
           "target": "Lnet/minecraft/server/players/PlayerList;reloadTagData()V"
         }
+      }
+    },
+    "fabric-networking-api-v1": {
+      "net.fabricmc.fabric.mixin.networking.ServerCommonPacketListenerImplMixin#handleCustomPayloadReceivedAsync": {
+        "disable": true
       }
     },
     "fabric-permission-api-v1": {

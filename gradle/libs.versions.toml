@@ -40,6 +40,10 @@ spark-fabric = { module = "me.lucko:spark-fabric", version.ref = "spark-fabric" 
 fabric-api-base = { module = "net.fabricmc.fabric-api:fabric-api-base", version = "2.0.6+fcdff87f5d" }
 fabric-command-api = { module = "net.fabricmc.fabric-api:fabric-command-api-v2", version = "3.1.2+fcdff87f5d" }
 fabric-lifecycle-events = { module = "net.fabricmc.fabric-api:fabric-lifecycle-events-v1", version = "4.1.9+ffef5f675d" }
+fabric-events-interaction = { module = "net.fabricmc.fabric-api:fabric-events-interaction-v0", version = "5.3.6+3434d6d95d" }
+fabric-networking-api = { module = "net.fabricmc.fabric-api:fabric-networking-api-v1", version = "6.3.8+fcdff87f5d" }
+fabric-permission-api = { module = "net.fabricmc.fabric-api:fabric-permission-api-v1", version = "1.0.8+fcdff87f5d" }
+fabric-permissions-api-v0 = { module = "me.lucko:fabric-permissions-api", version = "0.7.0" }
 
 # for tests
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }

@@ -49,6 +49,10 @@ dependencies {
     // fabric api events bridged onto paper, only used when the mods are installed
     compileOnly(libs.fabric.api.base) { isTransitive = false }
     compileOnly(libs.fabric.lifecycle.events) { isTransitive = false }
+    compileOnly(libs.fabric.events.interaction) { isTransitive = false }
+    compileOnly(libs.fabric.networking.api) { isTransitive = false }
+    compileOnly(libs.fabric.permission.api) { isTransitive = false }
+    compileOnly(libs.fabric.permissions.api.v0) { isTransitive = false }
 
     // spark mod for fabric, need its utils
     include(libs.spark.fabric) {
@@ -67,5 +71,6 @@ horizon {
 
 tasks.withType<Javadoc>().configureEach {
     exclude("io/canvasmc/horizon/inject/mixin/**")
+    exclude("io/canvasmc/horizon/inject/fabricapi/**")
     exclude("**/taskCache/**")
 }

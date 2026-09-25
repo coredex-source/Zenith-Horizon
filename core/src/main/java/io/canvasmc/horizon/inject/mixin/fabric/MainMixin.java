@@ -1,6 +1,7 @@
 package io.canvasmc.horizon.inject.mixin.fabric;
 
 import io.canvasmc.horizon.fabric.HorizonFabric;
+import io.canvasmc.horizon.inject.fabricapi.FabricApiBridges;
 import joptsimple.OptionSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.Main;
@@ -17,6 +18,9 @@ public class MainMixin {
     @Inject(method = "main", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Util;startTimerHackThread()V"))
     private static void horizon$fabricServerEntrypoints(OptionSet optionSet, CallbackInfo ci) {
         HorizonFabric.startServer();
+        if (HorizonFabric.isLoaded()) {
+            FabricApiBridges.register();
+        }
         if (HorizonFabric.registryFreezePending()) {
             BuiltInRegistries.bootStrap();
             CreativeModeTabs.validate();

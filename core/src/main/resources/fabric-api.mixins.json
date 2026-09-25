@@ -1,9 +1,13 @@
 {
   "mixins": [
+    "CustomPacketPayloadCodecMixin",
     "LevelChunkMixin",
-    "MinecraftServerMixin"
+    "MinecraftServerMixin",
+    "ServerConfigurationPacketListenerImplMixin",
+    "ServerGamePacketListenerImplMixin"
   ],
   "package": "io.canvasmc.horizon.inject.fabricapi.mixin",
+  "plugin": "io.canvasmc.horizon.fabric.mixin.FabricApiMixinPlugin",
   "mixinPriority": 1,
   "compatibilityLevel": "JAVA_21"
 }
