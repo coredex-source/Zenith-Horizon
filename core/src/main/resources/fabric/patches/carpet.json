@@ -1,0 +1,73 @@
+{
+  "horizon:disabled_mixins": {
+    "carpet": [
+      "carpet.mixins.ChunkMap_scarpetChunkCreationMixin",
+      "carpet.mixins.LevelLightEngine_scarpetChunkCreationMixin",
+      "carpet.mixins.ServerPlayer_parrotMixin",
+      "carpet.mixins.TicketStorage_scarpetMixin"
+    ]
+  },
+  "horizon:mixin_patches": {
+    "carpet": {
+      "carpet.mixins.BlockItem_creativeNoClipMixin#canSpectatingPlace": {
+        "disable": true
+      },
+      "carpet.mixins.Level_fillUpdatesMixin#addFillUpdatesInt": {
+        "disable": true
+      },
+      "carpet.mixins.Level_fillUpdatesMixin#updateNeighborsMaybe": {
+        "disable": true
+      },
+      "carpet.mixins.LivingEntity_cleanLogsMixin#shouldLogDeaths": {
+        "disable": true
+      },
+      "carpet.mixins.LivingEntity_scarpetEventsMixin#entityTakingDamage": {
+        "disable": true
+      },
+      "carpet.mixins.Player_scarpetEventsMixin#playerTakingDamage": {
+        "disable": true
+      },
+      "carpet.mixins.MerchantResultSlot_scarpetEventMixin#onTrade": {
+        "at": {
+          "target": "Lnet/minecraft/world/item/trading/Merchant;processTrade(Lnet/minecraft/world/item/trading/MerchantOffer;Lio/papermc/paper/event/player/PlayerPurchaseEvent;)V"
+        }
+      },
+      "carpet.mixins.MinecraftServer_pingPlayerSampleLimit#modifyPlayerSampleLimit": {
+        "disable": true
+      },
+      "carpet.mixins.NaturalSpawnerMixin#getSqDistanceTo": {
+        "disable": true
+      },
+      "carpet.mixins.NaturalSpawnerMixin#spawnEntity": {
+        "disable": true
+      },
+      "carpet.mixins.NaturalSpawnerMixin#spawnMultipleTimes": {
+        "disable": true
+      },
+      "carpet.mixins.PathNavigation_pathfindingMixin#pathToBlock": {
+        "disable": true
+      },
+      "carpet.mixins.PathNavigation_pathfindingMixin#pathToEntity": {
+        "disable": true
+      },
+      "carpet.mixins.PlayerList_fakePlayersMixin#makePlayerForRespawn": {
+        "disable": true
+      },
+      "carpet.mixins.RedstoneWireBlock_fastMixin#redirectNeighborUpdateUpdate": {
+        "disable": true
+      },
+      "carpet.mixins.RedstoneWireBlock_fastMixin#redirectOnBlockAddedUpdate": {
+        "disable": true
+      },
+      "carpet.mixins.RedstoneWireBlock_fastMixin#redirectOnStateReplacedUpdate": {
+        "disable": true
+      },
+      "carpet.mixins.ServerLevel_scarpetMixin#onNaturalLightinig": {
+        "disable": true
+      },
+      "carpet.mixins.ServerPlayerGameMode_scarpetEventsMixin#onBlockBroken": {
+        "disable": true
+      }
+    }
+  }
+}

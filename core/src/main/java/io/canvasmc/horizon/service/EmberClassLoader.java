@@ -299,7 +299,7 @@ public final class EmberClassLoader extends ClassLoader {
         }
 
         // Prevent transforming classes that are excluded from transformation.
-        if (!this.transformationFilter.test(name)) {
+        if (data.data().length > 0 && !this.transformationFilter.test(name)) {
             LOGGER.trace("Skipping transformer excluded class: {}", name);
             return null;
         }

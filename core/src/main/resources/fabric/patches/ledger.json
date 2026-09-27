@@ -1,0 +1,65 @@
+{
+  "horizon:mixin_patches": {
+    "ledger": {
+      "com.github.quiltservertools.ledger.mixin.blocks.CampfireBlockMixin#logCampfireAddItem": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.cauldron.CauldronBlockMixin#ledgerLogIncrementLevelCauldron": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.cauldron.CauldronInteractionsMixin#ledgerLogBottleFillEmptyCauldron": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.cauldron.CauldronInteractionsMixin#ledgerLogBottleFillWaterCauldron": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.cauldron.LayeredCauldronBlockMixin#ledgerLogDecrementLevelCauldron": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.cauldron.LayeredCauldronBlockMixin#ledgerLogIncrementLevelCauldron": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.LiquidBlockMixin#ledgerLogFluidBlockForm": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.SpongeBlockMixin#logWaterDrainNonSource": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.SpongeBlockMixin#logWaterDrainSource": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.CampfireBlockEntityMixin#logCampfireRemoveItem": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.entities.ArmorStandMixin#ledgerArmorStandKill(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;FLorg/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable;)V": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.entities.EnderDragonMixin#logEnderDragonBreakingBlocks": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.entities.MobMixin#ledgerEntityConversion": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.entities.ServerPlayerMixin#logPlayerItemDrop": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.entities.SnowGolemMixin#logSnowGolemSnow": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.FrostWalkerEnchantmentMixin#logFrostWalkerPlacement": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.PortalShapeMixin#logPortalPlacement": {
+        "disable": true
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.BedBlockMixin#logBedExplosion": {
+        "disable": true,
+        "versions": "<1.3.24"
+      },
+      "com.github.quiltservertools.ledger.mixin.blocks.BedBlockMixin#storeBlockEntity": {
+        "disable": true,
+        "versions": "<1.3.24"
+      }
+    }
+  }
+}

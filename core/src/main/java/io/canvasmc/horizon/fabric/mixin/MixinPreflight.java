@@ -14,7 +14,10 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -52,9 +55,17 @@ public final class MixinPreflight {
     private static final String INVOKER = "Lorg/spongepowered/asm/mixin/gen/Invoker;";
     private static final String INJECT = "Lorg/spongepowered/asm/mixin/injection/Inject;";
     private static final String MODIFY_VARIABLE = "Lorg/spongepowered/asm/mixin/injection/ModifyVariable;";
+    private static final String MODIFY_CONSTANT = "Lorg/spongepowered/asm/mixin/injection/ModifyConstant;";
     private static final String GROUP = "Lorg/spongepowered/asm/mixin/injection/Group;";
     private static final String COERCE = "Lorg/spongepowered/asm/mixin/injection/Coerce;";
     private static final String SURROGATE = "Lorg/spongepowered/asm/mixin/injection/Surrogate;";
+    private static final String LOCAL = "Lcom/llamalad7/mixinextras/sugar/Local;";
+    private static final Map<String, String> LOCAL_REFS = Map.of(
+        "com/llamalad7/mixinextras/sugar/ref/LocalBooleanRef", "Z", "com/llamalad7/mixinextras/sugar/ref/LocalByteRef", "B",
+        "com/llamalad7/mixinextras/sugar/ref/LocalCharRef", "C", "com/llamalad7/mixinextras/sugar/ref/LocalShortRef", "S",
+        "com/llamalad7/mixinextras/sugar/ref/LocalIntRef", "I", "com/llamalad7/mixinextras/sugar/ref/LocalLongRef", "J",
+        "com/llamalad7/mixinextras/sugar/ref/LocalFloatRef", "F", "com/llamalad7/mixinextras/sugar/ref/LocalDoubleRef", "D"
+    );
     private static final String CALLBACK_INFO = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
     private static final String CALLBACK_INFO_RETURNABLE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
     private static final Set<String> INJECTORS = Set.of(
@@ -63,7 +74,7 @@ public final class MixinPreflight {
         "Lorg/spongepowered/asm/mixin/injection/ModifyArg;",
         "Lorg/spongepowered/asm/mixin/injection/ModifyArgs;",
         MODIFY_VARIABLE,
-        "Lorg/spongepowered/asm/mixin/injection/ModifyConstant;",
+        MODIFY_CONSTANT,
         "Lcom/llamalad7/mixinextras/injector/ModifyExpressionValue;",
         "Lcom/llamalad7/mixinextras/injector/ModifyReceiver;",
         "Lcom/llamalad7/mixinextras/injector/ModifyReturnValue;",
@@ -171,12 +182,28 @@ public final class MixinPreflight {
                 if (adaptation.positions() != null) {
                     MixinPatches.reshape(handler, adaptation.parameters(), adaptation.positions());
                 }
+                List<AnnotationNode> points = injector != null ? points(injector) : null;
+                if (points != null) {
+                    for (AnnotationNode point : points) {
+                        if (value(point, "target") instanceof String target && adaptation.rewired().containsKey(target)) {
+                            MixinPatches.set(point, "target", adaptation.rewired().get(target));
+                        }
+                    }
+                }
                 break;
             }
         }
 
         if (indexing || HorizonLoader.getInstance().getProperties().mixinPreflight() != PreflightPolicy.DISABLE_MIXIN) {
             return;
+        }
+        for (MethodNode handler : mixin.methods) {
+            AnnotationNode injector = injector(handler);
+            if (injector != null && injector.desc.equals(INJECT) && value(injector, "locals") instanceof String[] locals
+                && locals.length == 2 && locals[1].equals("CAPTURE_FAILHARD")) {
+                MixinPatches.set(injector, "locals", new String[]{locals[0], "CAPTURE_FAILSOFT"});
+                MixinPatches.set(injector, "require", 0);
+            }
         }
         Set<String> strip = STRIPS.get(mixin.name);
         if (strip == null) {
@@ -249,7 +276,8 @@ public final class MixinPreflight {
             MethodNode method = selected.getFirst();
             String retarget = null;
             List<AnnotationNode> points = points(injector);
-            if (selector.desc() == null && points != null && evaluable(points) && !found(points, List.of(method))) {
+            Map<String, String> rewired = inject != null && points != null ? rewire(points, method) : Map.of();
+            if (selector.desc() == null && points != null && evaluable(points) && rewired.isEmpty() && !found(points, List.of(method))) {
                 MethodNode original = method;
                 List<MethodNode> candidates = target.methods.stream()
                     .filter((candidate) -> candidate != original && candidate.name.equals(original.name) && found(points, List.of(candidate)))
@@ -261,7 +289,7 @@ public final class MixinPreflight {
             }
             if (inject == null) {
                 if (retarget != null) {
-                    adaptations.add(new Adaptation(handler.name, handler.desc, retarget, false, List.of(), null));
+                    adaptations.add(new Adaptation(handler.name, handler.desc, retarget, false, List.of(), null, Map.of()));
                     LOGGER.info("Adapting {} {} in {} from {} to {}::{}{}", simpleName(injector.desc), handler.name, mixin.name.replace('/', '.'), entry.modId(),
                         target.name.replace('/', '.'), method.name, method.desc);
                 }
@@ -290,11 +318,15 @@ public final class MixinPreflight {
             int[] positions = callback == 0 ? null : align(handler, Arrays.copyOf(arguments, callback), parameters);
             if (callback > 0 && positions == null) continue;
             if (positions != null && callback == parameters.length) positions = null;
-            if (retarget == null && !returnable && positions == null) continue;
+            if (retarget == null && !returnable && positions == null && rewired.isEmpty()) continue;
 
-            adaptations.add(new Adaptation(handler.name, handler.desc, retarget, returnable, List.of(parameters), positions));
-            LOGGER.info("Adapting @Inject {} in {} from {} to {}::{}{}", handler.name, mixin.name.replace('/', '.'), entry.modId(),
-                target.name.replace('/', '.'), method.name, method.desc);
+            adaptations.add(new Adaptation(handler.name, handler.desc, retarget, returnable, List.of(parameters), positions, rewired));
+            if (retarget != null || returnable || positions != null) {
+                LOGGER.info("Adapting @Inject {} in {} from {} to {}::{}{}", handler.name, mixin.name.replace('/', '.'), entry.modId(),
+                    target.name.replace('/', '.'), method.name, method.desc);
+            }
+            rewired.forEach((from, to) -> LOGGER.info("Adapting @Inject {} in {} from {} to {}, the same call with Paper's signature", handler.name,
+                mixin.name.replace('/', '.'), entry.modId(), to));
         }
         return adaptations;
     }
@@ -548,6 +580,20 @@ public final class MixinPreflight {
             return;
         }
 
+        String local = require > 0 ? missingLocal(handler, methods) : null;
+        if (local != null) {
+            problems.add(kind + " " + handler.name + " in " + describe(methods) + " can't find " + local);
+            return;
+        }
+
+        if (injector.desc.equals(MODIFY_CONSTANT)) {
+            List<AnnotationNode> constants = constants(injector);
+            if (constants != null && require > 0 && !foundConstant(constants, methods)) {
+                problems.add(kind + " " + handler.name + " in " + describe(methods) + " can't find " + describeConstants(constants));
+            }
+            return;
+        }
+
         List<AnnotationNode> points = points(injector);
         boolean evaluable = points != null && evaluable(points);
         if (evaluable && require > 0 && !found(points, methods)) {
@@ -671,6 +717,145 @@ public final class MixinPreflight {
             }
         }
         return false;
+    }
+
+    private static @Nullable String missingLocal(@NonNull MethodNode handler, @NonNull Collection<MethodNode> methods) {
+        Type[] arguments = Type.getArgumentTypes(handler.desc);
+        for (int i = 0; i < arguments.length; i++) {
+            AnnotationNode local = parameterAnnotation(handler, i, LOCAL);
+            if (local == null || value(local, "index") != null) continue;
+
+            String desc = arguments[i].getSort() == Type.OBJECT && arguments[i].getInternalName().startsWith("com/llamalad7/mixinextras/sugar/ref/")
+                ? LOCAL_REFS.get(arguments[i].getInternalName()) : arguments[i].getDescriptor();
+            if (desc == null) continue;
+
+            List<String> names = strings(value(local, "name"));
+            int ordinal = value(local, "ordinal") instanceof Integer value ? value : 0;
+            boolean argsOnly = Boolean.TRUE.equals(value(local, "argsOnly"));
+            boolean evaluable = false;
+            boolean found = false;
+            for (MethodNode method : methods) {
+                int count = 0;
+                if (argsOnly) {
+                    evaluable = true;
+                    for (Type parameter : Type.getArgumentTypes(method.desc)) {
+                        if (parameter.getDescriptor().equals(desc)) count++;
+                    }
+                } else if (method.localVariables != null && !method.localVariables.isEmpty()) {
+                    evaluable = true;
+                    Set<Integer> slots = new LinkedHashSet<>();
+                    for (LocalVariableNode variable : method.localVariables) {
+                        if (variable.desc.equals(desc) && (names.isEmpty() || names.contains(variable.name))) slots.add(variable.index);
+                    }
+                    count = slots.size();
+                }
+                if (count > (names.isEmpty() ? ordinal : 0)) found = true;
+            }
+            if (evaluable && !found) {
+                return "@Local " + Type.getType(desc).getClassName() + (names.isEmpty() ? "" : " " + String.join("/", names))
+                    + (value(local, "ordinal") != null ? " ordinal " + ordinal : "");
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable AnnotationNode parameterAnnotation(@NonNull MethodNode handler, int parameter, @NonNull String desc) {
+        for (List<AnnotationNode>[] annotations : Arrays.asList(handler.invisibleParameterAnnotations, handler.visibleParameterAnnotations)) {
+            if (annotations == null || parameter >= annotations.length || annotations[parameter] == null) continue;
+            for (AnnotationNode annotation : annotations[parameter]) {
+                if (annotation.desc.equals(desc)) return annotation;
+            }
+        }
+        return null;
+    }
+
+    private static @NonNull Map<String, String> rewire(@NonNull List<AnnotationNode> points, @NonNull MethodNode method) {
+        Map<String, String> rewired = new HashMap<>();
+        for (AnnotationNode point : points) {
+            String shift = value(point, "shift") instanceof String[] values ? values[values.length - 1] : "BEFORE";
+            if (!"INVOKE".equals(value(point, "value")) || !(value(point, "target") instanceof String target)
+                || !(shift.equals("BEFORE") || shift.equals("AFTER")) || found(List.of(point), List.of(method))) {
+                continue;
+            }
+
+            Selector selector = Selector.parse(target);
+            if (selector == null || selector.all() || selector.owner() == null || selector.name() == null || selector.desc() == null) continue;
+
+            Set<String> descs = new LinkedHashSet<>();
+            int calls = 0;
+            for (AbstractInsnNode insn : method.instructions) {
+                if (insn instanceof MethodInsnNode call && call.owner.equals(selector.owner()) && call.name.equals(selector.name())) {
+                    descs.add(call.desc);
+                    calls++;
+                }
+            }
+            int ordinal = value(point, "ordinal") instanceof Integer value ? value : -1;
+            if (descs.size() == 1 && calls > ordinal
+                && (shift.equals("BEFORE") || Type.getReturnType(descs.iterator().next()).equals(Type.getReturnType(selector.desc())))) {
+                rewired.put(target, "L" + selector.owner() + ";" + selector.name() + descs.iterator().next());
+            }
+        }
+        return rewired;
+    }
+
+    private static @Nullable List<AnnotationNode> constants(@NonNull AnnotationNode injector) {
+        if (value(injector, "slice") != null || !(value(injector, "constant") instanceof List<?> list) || list.isEmpty()) return null;
+
+        List<AnnotationNode> constants = new ArrayList<>();
+        for (Object element : list) {
+            if (!(element instanceof AnnotationNode constant) || value(constant, "expandZeroConditions") != null || value(constant, "slice") != null
+                || constantValue(constant) == null) {
+                return null;
+            }
+            constants.add(constant);
+        }
+        return constants;
+    }
+
+    private static @Nullable Object constantValue(@NonNull AnnotationNode constant) {
+        if (Boolean.TRUE.equals(value(constant, "nullValue"))) return Type.VOID_TYPE;
+        for (String key : List.of("intValue", "floatValue", "longValue", "doubleValue", "stringValue", "classValue")) {
+            Object value = value(constant, key);
+            if (value != null) return value;
+        }
+        return null;
+    }
+
+    private static boolean foundConstant(@NonNull List<AnnotationNode> constants, @NonNull Collection<MethodNode> methods) {
+        for (AnnotationNode constant : constants) {
+            Object expected = constantValue(constant);
+            int ordinal = value(constant, "ordinal") instanceof Integer value ? value : -1;
+            for (MethodNode method : methods) {
+                int matches = 0;
+                for (AbstractInsnNode insn : method.instructions) {
+                    if (expected.equals(constantOf(insn)) && ++matches > ordinal) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static @Nullable Object constantOf(@NonNull AbstractInsnNode insn) {
+        int opcode = insn.getOpcode();
+        if (opcode == Opcodes.ACONST_NULL) return Type.VOID_TYPE;
+        if (opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5) return opcode - Opcodes.ICONST_0;
+        if (opcode >= Opcodes.LCONST_0 && opcode <= Opcodes.LCONST_1) return (long) (opcode - Opcodes.LCONST_0);
+        if (opcode >= Opcodes.FCONST_0 && opcode <= Opcodes.FCONST_2) return (float) (opcode - Opcodes.FCONST_0);
+        if (opcode >= Opcodes.DCONST_0 && opcode <= Opcodes.DCONST_1) return (double) (opcode - Opcodes.DCONST_0);
+        if (insn instanceof IntInsnNode number && (opcode == Opcodes.BIPUSH || opcode == Opcodes.SIPUSH)) return number.operand;
+        if (insn instanceof LdcInsnNode ldc) return ldc.cst;
+        if (insn instanceof TypeInsnNode type && opcode == Opcodes.INSTANCEOF) return Type.getObjectType(type.desc);
+        return null;
+    }
+
+    private static @NonNull String describeConstants(@NonNull List<AnnotationNode> constants) {
+        return constants.stream()
+            .map((constant) -> {
+                Object expected = constantValue(constant);
+                String shown = expected == Type.VOID_TYPE ? "null" : expected instanceof Type type ? type.getClassName() + ".class" : String.valueOf(expected);
+                return "constant " + shown + (value(constant, "ordinal") != null ? " ordinal " + value(constant, "ordinal") : "");
+            })
+            .collect(Collectors.joining(" or "));
     }
 
     private static boolean matches(@NonNull AbstractInsnNode insn, @NonNull String kind, @Nullable String target) {
@@ -877,7 +1062,8 @@ public final class MixinPreflight {
     private record Retype(String field, String from, String to) {
     }
 
-    private record Adaptation(String handler, String desc, @Nullable String method, boolean returnable, List<Type> parameters, int @Nullable [] positions) {
+    private record Adaptation(String handler, String desc, @Nullable String method, boolean returnable, List<Type> parameters, int @Nullable [] positions,
+                              Map<String, String> rewired) {
     }
 
     private record Selector(@Nullable String owner, @Nullable String name, @Nullable String desc, boolean all) {

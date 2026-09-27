@@ -115,7 +115,7 @@ public final class ClassTransformer {
     public byte @NonNull [] transformBytes(final @NonNull String className, final byte @NonNull [] input, final @NonNull TransformPhase phase) {
         final String internalName = className.replace('.', '/');
 
-        if (!this.exclusionFilter.test(internalName)) {
+        if (input.length > 0 && !this.exclusionFilter.test(internalName)) {
             LOGGER.debug("Skipping resource excluded class: {}", internalName);
             return input;
         }

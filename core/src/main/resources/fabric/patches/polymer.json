@@ -1,0 +1,55 @@
+{
+  "horizon:disabled_mixins": {
+    "polymer-core": [
+      "eu.pb4.polymer.core.mixin.entity.ServerLevelAccessor",
+      "eu.pb4.polymer.core.mixin.other.ByteBufCodecsRegistryMixin"
+    ],
+    "polymer-virtual-entity": [
+      "eu.pb4.polymer.virtualentity.mixin.accessors.ChunkMapAccessor"
+    ]
+  },
+  "horizon:mixin_patches": {
+    "polymer-core": {
+      "eu.pb4.polymer.core.mixin.block.packet.ClientboundLevelChunkPacketDataMixin#skipPolymerEntries": {
+        "disable": true
+      },
+      "eu.pb4.polymer.core.mixin.block.packet.ClientboundLevelChunkWithLightPacketMixin#polymer$addPolymerLightContext": {
+        "disable": true
+      },
+      "eu.pb4.polymer.core.mixin.entity.TrackedEntityMixin#replaceReceiver": {
+        "disable": true
+      },
+      "eu.pb4.polymer.core.mixin.item.packet.ItemStackPacketCodecMixin#polymer$addSyncedDefaults": {
+        "disable": true
+      },
+      "eu.pb4.polymer.core.mixin.item.packet.ItemStackPacketCodecMixin#polymerCore$decodeItemStackServer": {
+        "disable": true
+      },
+      "eu.pb4.polymer.core.mixin.other.ByteBufCodecsHolderMixin#polymer$changeData": {
+        "disable": true
+      }
+    },
+    "polymer-virtual-entity": {
+      "eu.pb4.polymer.virtualentity.mixin.block.WorldChunkMixin#polymerVE$addNew": {
+        "disable": true
+      },
+      "eu.pb4.polymer.virtualentity.mixin.ServerPlayerMixin#polymerVE$removeOnWorldChange": {
+        "disable": true
+      },
+      "eu.pb4.polymer.virtualentity.mixin.ServerPlayerEntityMixin#polymerVE$removeOnWorldChange": {
+        "disable": true,
+        "versions": "<0.17"
+      }
+    },
+    "sgui": {
+      "eu.pb4.sgui.mixin.ServerPlayerEntityMixin#sgui$dontForceCloseFor": {
+        "disable": true
+      }
+    },
+    "universal-graves": {
+      "eu.pb4.graves.mixin.EndPlatformFeatureMixin#grave_dontBreak": {
+        "disable": true
+      }
+    }
+  }
+}

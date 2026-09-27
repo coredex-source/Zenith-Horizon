@@ -72,7 +72,9 @@ public final class MixinPatches {
         }
 
         for (Patch patch : patches) {
-            List<MethodNode> handlers = mixin.methods.stream().filter((method) -> method.name.equals(patch.handler())).toList();
+            List<MethodNode> handlers = mixin.methods.stream()
+                .filter((method) -> patch.handler().indexOf('(') > -1 ? (method.name + method.desc).equals(patch.handler()) : method.name.equals(patch.handler()))
+                .toList();
             if (handlers.isEmpty()) {
                 if (REPORTED.add(patch.key())) {
                     LOGGER.warn("Mixin patch {} from the Paper overrides doesn't match anything in {}", patch.key(), patch.mod());
@@ -109,6 +111,9 @@ public final class MixinPatches {
         }
         if (data.has("at")) {
             retargetAt(injector, data.get("at"));
+        }
+        if (data.path("returnable").asBoolean(false)) {
+            upgradeCallback(handler);
         }
         if (data.has("append")) {
             List<Type> types = new ArrayList<>();

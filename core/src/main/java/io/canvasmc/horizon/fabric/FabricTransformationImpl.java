@@ -63,7 +63,9 @@ public final class FabricTransformationImpl implements TransformationService {
 
         boolean restoreCalls = VanillaCallSites.restores(type.getInternalName());
         boolean addMembers = VanillaMembers.adds(type.getInternalName());
-        if (!applyClassTweaker && !transformAccess && stripData == null && !restoreCalls && !addMembers) {
+        boolean readFields = VanillaFields.reads(node);
+        boolean addView = BukkitViews.needs(node);
+        if (!applyClassTweaker && !transformAccess && stripData == null && !restoreCalls && !addMembers && !readFields && !addView) {
             return null;
         }
 
@@ -88,6 +90,12 @@ public final class FabricTransformationImpl implements TransformationService {
         }
         if (addMembers) {
             VanillaMembers.add(result);
+        }
+        if (readFields) {
+            VanillaFields.rewrite(result);
+        }
+        if (addView) {
+            BukkitViews.add(result);
         }
         return result;
     }

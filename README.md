@@ -94,8 +94,9 @@ have multiple server JARs and swap between the target Horizons they use.
 - Horizon generates a `config/horizon/paper-mod.defaults.json` file for default fabric mod overrides, users can put their own changes
   in `config/horizon/paper-mod.json`. Its `horizon:disabled_mixins` entry lists single mixins (by mod id) that Horizon
   skips because they don't work on Paper, either as names or as `{"mixin": ..., "versions": ..., "minecraft": ...}` to
-  skip them only on some versions, and `horizon:mixin_patches` changes single injectors (`"mixin.Class#handler"`)
-  to fit Paper: `disable`, `require`, `method`, `at` and `append`, optionally limited with `versions` and `minecraft`.
+  skip them only on some versions, and `horizon:mixin_patches` changes single injectors (`"mixin.Class#handler"`, or
+  `#handler(desc)` for one overload) to fit Paper: `disable`, `require`, `method`, `at`, `append` and `returnable`,
+  optionally limited with `versions` and `minecraft`.
 - Before loading mods Horizon checks every fabric mod mixin against the server. `mixinPreflight` decides what happens to
   mixins that don't match: `disable-mixin` (default) skips them with a warning, `fail` stops the server, and `warn` only
   logs them. It can also be set with the `-DHorizon.mixinPreflight` JVM argument.

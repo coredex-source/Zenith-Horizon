@@ -1,0 +1,28 @@
+{
+  "horizon:mixin_patches": {
+    "servercore": {
+      "me.wesley1808.servercore.mixin.features.breeding_cap.AllayMixin#servercore$enforceBreedCap": {
+        "returnable": true
+      },
+      "me.wesley1808.servercore.mixin.optimizations.misc.PathFinderMixin#servercore$reduceStreams": {
+        "disable": true
+      },
+      "me.wesley1808.servercore.mixin.optimizations.sync_loads.DynamicGameEventListenerMixin#servercore$onlyUpdateIfLoaded": {
+        "disable": true
+      },
+      "me.wesley1808.servercore.mixin.optimizations.sync_loads.MapItemMixin#servercore$onlyUpdateIfLoaded": {
+        "disable": true
+      },
+      "me.wesley1808.servercore.mixin.optimizations.sync_loads.RemoveBlockGoalMixin#servercore$onlyValidateIfLoaded": {
+        "disable": true
+      },
+      "me.wesley1808.servercore.fabric.mixin.optimizations.misc.BlockGetterMixin#servercore$fastFluidCheck": {
+        "disable": true
+      },
+      "me.wesley1808.servercore.mixin.features.mob_spawning.NaturalSpawnerMixin#servercore$canSpawn": {
+        "disable": true,
+        "versions": "<1.5.20"
+      }
+    }
+  }
+}
