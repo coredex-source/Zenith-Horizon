@@ -56,6 +56,8 @@ public final class MixinTransformationImpl implements TransformationService {
 
     @Override
     public @Nullable ClassNode transform(final @NonNull Type type, final @NonNull ClassNode node, final @NonNull TransformPhase phase) throws Throwable {
+        if (this.transformer == null) return null;
+
         if (this.shouldGenerateClass(type)) {
             return this.generateClass(type, node) ? node : null;
         }

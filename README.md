@@ -102,6 +102,8 @@ have multiple server JARs and swap between the target Horizons they use.
 - A fabric mod mixin that still fails while the server runs stops the server, like it does on Fabric. With
   `mixinQuarantine: true` Horizon records it in `config/horizon/mixin-quarantine.json` and disables it to let the server boot while
   showing a warning.
+- With fabric-language-kotlin installed, plugins use its Kotlin instead of their own (shaded or from `libraries:`).
+  Horizon warns when a plugin was built for a newer Kotlin than the mod provides.
 
 Once all options are configured to your liking, you can boot the Horizon JAR as usual, and your server will run with
 Horizon as its bootstrapper!

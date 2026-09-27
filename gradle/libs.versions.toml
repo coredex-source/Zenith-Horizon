@@ -14,6 +14,9 @@ jspecify = "1.0.0"
 junit = "6.1.0"
 shadow = "9.5.1"
 spark-fabric = "1.10.180"
+kotlin = "2.4.20"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
 
 [libraries]
 jbsdiff = { module = "io.sigpipe:jbsdiff", version = "1.0" }
@@ -50,6 +53,9 @@ fabric-events-interaction = { module = "net.fabricmc.fabric-api:fabric-events-in
 fabric-networking-api = { module = "net.fabricmc.fabric-api:fabric-networking-api-v1", version = "6.3.8+fcdff87f5d" }
 fabric-permission-api = { module = "net.fabricmc.fabric-api:fabric-permission-api-v1", version = "1.0.8+fcdff87f5d" }
 fabric-permissions-api-v0 = { module = "me.lucko:fabric-permissions-api", version = "0.7.0" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 # for tests
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
@@ -67,3 +73,4 @@ spotless = { id = "com.diffplug.spotless", version = "8.10.2" }
 plugin-publish = { id = "com.gradle.plugin-publish", version = "2.2.1" }
 userdev = { id = "io.canvasmc.weaver.userdev", version.ref = "userdev" }
 run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-paper" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

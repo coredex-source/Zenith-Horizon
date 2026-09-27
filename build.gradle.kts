@@ -3,6 +3,7 @@ plugins {
     idea
     alias(libs.plugins.userdev) apply false
     alias(libs.plugins.run.paper) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
 }
 
 tasks.wrapper {
