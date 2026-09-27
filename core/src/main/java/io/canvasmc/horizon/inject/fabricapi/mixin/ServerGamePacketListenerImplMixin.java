@@ -3,7 +3,7 @@ package io.canvasmc.horizon.inject.fabricapi.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import io.canvasmc.horizon.fabric.HorizonFabric;
+import io.canvasmc.horizon.fabric.FabricApiModule;
 import io.canvasmc.horizon.inject.fabricapi.FabricEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket;
@@ -30,7 +30,7 @@ public abstract class ServerGamePacketListenerImplMixin {
 
     @WrapOperation(method = "handlePickItemFromBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getCloneItemStack(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Z)Lnet/minecraft/world/item/ItemStack;"))
     private ItemStack horizon$fabricPickItemFromBlock(BlockState state, LevelReader level, BlockPos pos, boolean includeData, Operation<ItemStack> original, @Local(argsOnly = true) ServerboundPickItemFromBlockPacket packet) {
-        if (HorizonFabric.hasInteractionEvents()) {
+        if (FabricApiModule.INTERACTION_EVENTS.isLoaded()) {
             ItemStack stack = FabricEvents.pickItemFromBlock(this.player, pos, state, packet.includeData());
             if (stack != null) {
                 if (!stack.isEmpty()) {
@@ -44,7 +44,7 @@ public abstract class ServerGamePacketListenerImplMixin {
 
     @WrapOperation(method = "handlePickItemFromEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getPickResult()Lnet/minecraft/world/item/ItemStack;"))
     private ItemStack horizon$fabricPickItemFromEntity(Entity entity, Operation<ItemStack> original, @Local(argsOnly = true) ServerboundPickItemFromEntityPacket packet) {
-        if (HorizonFabric.hasInteractionEvents()) {
+        if (FabricApiModule.INTERACTION_EVENTS.isLoaded()) {
             ItemStack stack = FabricEvents.pickItemFromEntity(this.player, entity, packet.includeData());
             if (stack != null) {
                 if (!stack.isEmpty()) {

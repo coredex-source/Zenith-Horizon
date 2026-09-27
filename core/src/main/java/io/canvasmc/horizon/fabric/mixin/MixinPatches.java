@@ -263,6 +263,13 @@ public final class MixinPatches {
         annotation.values.add(value);
     }
 
+    static boolean matches(@NonNull String modId, @Nullable String predicate) {
+        if (predicate == null) {
+            return true;
+        }
+        return FabricLoader.getInstance().getModContainer(modId).map((mod) -> matches(mod, predicate)).orElse(false);
+    }
+
     private static boolean matches(@NonNull ModContainer mod, @Nullable String predicate) {
         if (predicate == null) {
             return true;

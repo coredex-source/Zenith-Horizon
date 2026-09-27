@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +42,7 @@ public final class FabricMixinConfigs {
     private static final Map<String, Entry> BY_PACKAGE = new ConcurrentHashMap<>();
     private static final Map<String, Entry> BY_MIXIN = new ConcurrentHashMap<>();
     private static final Map<String, IMixinConfig> CONFIGS = new ConcurrentHashMap<>();
-    private static final Map<String, Set<String>> DISABLED = new ConcurrentHashMap<>();
+    private static final Map<String, Set<Disabled>> DISABLED = new ConcurrentHashMap<>();
     private static final Set<String> SKIPPED = ConcurrentHashMap.newKeySet();
 
     private FabricMixinConfigs() {
@@ -53,19 +54,36 @@ public final class FabricMixinConfigs {
 
     public static void disable(@NonNull JsonNode disabledMixins) {
         disabledMixins.properties().forEach((mod) -> {
-            Set<String> mixins = DISABLED.computeIfAbsent(mod.getKey(), (key) -> ConcurrentHashMap.newKeySet());
-            mod.getValue().forEach((mixin) -> mixins.add(mixin.asText()));
+            Set<Disabled> mixins = DISABLED.computeIfAbsent(mod.getKey(), (key) -> ConcurrentHashMap.newKeySet());
+            mod.getValue().forEach((mixin) -> {
+                Disabled entry = mixin.isObject()
+                    ? new Disabled(mixin.path("mixin").asText(), mixin.path("versions").asText(null), mixin.path("minecraft").asText(null))
+                    : new Disabled(mixin.asText(), null, null);
+                if (entry.mixin().isBlank()) {
+                    LOGGER.warn("Ignoring a disabled mixin for {} without a \"mixin\" name: {}", mod.getKey(), mixin);
+                    return;
+                }
+                mixins.add(entry);
+            });
         });
     }
 
     public static void warnUnmatched() {
-        DISABLED.forEach((mod, mixins) -> {
+        DISABLED.keySet().forEach((mod) -> {
             if (!FabricLoader.getInstance().isModLoaded(mod)) return;
-            mixins.stream()
+            disabled(mod).stream()
                 .filter((mixin) -> !SKIPPED.contains(mixin))
                 .sorted()
                 .forEach((mixin) -> LOGGER.warn("The default overrides disable mixin {} from {}, but {} has no such mixin", mixin, mod, mod));
         });
+    }
+
+    private static @NonNull Set<String> disabled(@NonNull String modId) {
+        Set<String> active = new HashSet<>();
+        for (Disabled entry : DISABLED.getOrDefault(modId, Set.of())) {
+            if (MixinPatches.matches(modId, entry.versions()) && MixinPatches.matches("minecraft", entry.minecraft())) active.add(entry.mixin());
+        }
+        return active;
     }
 
     public static void capture() {
@@ -141,7 +159,7 @@ public final class FabricMixinConfigs {
     }
 
     private static void removeSkipped(@NonNull ObjectNode config, @NonNull String mixinPackage, @NonNull String modId) {
-        Set<String> disabled = DISABLED.getOrDefault(modId, Set.of());
+        Set<String> disabled = disabled(modId);
         for (String key : MIXIN_KEYS) {
             if (!(config.get(key) instanceof ArrayNode mixins)) continue;
 
@@ -190,5 +208,8 @@ public final class FabricMixinConfigs {
         int defaultRequire,
         List<String> mixins
     ) {
+    }
+
+    private record Disabled(String mixin, @Nullable String versions, @Nullable String minecraft) {
     }
 }

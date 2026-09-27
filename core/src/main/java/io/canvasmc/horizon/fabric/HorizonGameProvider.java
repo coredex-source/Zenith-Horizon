@@ -78,7 +78,11 @@ public final class HorizonGameProvider implements GameProvider {
 
         return List.of(
             new BuiltinMod(gameJars, metadata.build()),
-            new BuiltinMod(gameJars, PaperModMetadata.create(getNormalizedGameVersion(), paperOverrides, launchDirectory.resolve("config")))
+            new BuiltinMod(gameJars, PaperModMetadata.create(getNormalizedGameVersion(), paperOverrides, launchDirectory.resolve("config"))),
+            new BuiltinMod(gameJars, new BuiltinModMetadata.Builder("moonrise", getNormalizedGameVersion())
+                .setName("Moonrise")
+                .setDescription("Moonrise's chunk system, bundled in Paper")
+                .build())
         );
     }
 

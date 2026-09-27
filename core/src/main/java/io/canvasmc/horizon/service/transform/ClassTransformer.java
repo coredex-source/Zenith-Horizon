@@ -125,7 +125,7 @@ public final class ClassTransformer {
         final Type type = Type.getObjectType(internalName);
         if (input.length > 0) {
             final ClassReader reader = new ClassReader(input);
-            reader.accept(node, 0);
+            reader.accept(node, ClassReader.EXPAND_FRAMES);
         }
         else {
             node.name = type.getInternalName();

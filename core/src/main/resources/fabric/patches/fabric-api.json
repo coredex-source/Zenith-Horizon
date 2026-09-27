@@ -1,11 +1,66 @@
 {
   "horizon:disabled_mixins": {
+    "fabric-block-api-v1": [
+      "net.fabricmc.fabric.mixin.block.ChunkSectionBlockStateCounterMixin"
+    ],
     "fabric-data-generation-api-v1": [
       "net.fabricmc.fabric.mixin.datagen.server.MainMixin"
+    ],
+    "fabric-lifecycle-events-v1": [
+      "net.fabricmc.fabric.mixin.event.lifecycle.ChunkHolderMixin",
+      "net.fabricmc.fabric.mixin.event.lifecycle.ChunkMapMixin",
+      "net.fabricmc.fabric.mixin.event.lifecycle.PersistentEntitySectionManagerMixin"
+    ],
+    "fabric-registry-sync-v0": [
+      {
+        "mixin": "net.fabricmc.fabric.mixin.registry.sync.MinecraftServerMixin",
+        "versions": ">=8.0.0"
+      }
     ]
   },
   "horizon:mixin_patches": {
+    "fabric-data-attachment-api-v1": {
+      "net.fabricmc.fabric.mixin.attachment.EntityMixin#writeEntityAttachments": {
+        "method": "saveWithoutId(Lnet/minecraft/world/level/storage/ValueOutput;ZZZ)V",
+        "at": {
+          "target": "Lnet/minecraft/world/entity/Entity;addAdditionalSaveData(Lnet/minecraft/world/level/storage/ValueOutput;Z)V"
+        }
+      }
+    },
+    "fabric-entity-events-v1": {
+      "net.fabricmc.fabric.mixin.entity.event.LivingEntityMixin#beforeEntityKilled": {
+        "at": {
+          "ordinal": 0
+        }
+      },
+      "net.fabricmc.fabric.mixin.entity.event.MobMixin#afterEntityConverted": {
+        "method": "convertTo(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/ConversionParams;Lnet/minecraft/world/entity/EntitySpawnReason;Lnet/minecraft/world/entity/ConversionParams$CancellingAfterConversion;Lorg/bukkit/event/entity/EntityTransformEvent$TransformReason;Lorg/bukkit/event/entity/CreatureSpawnEvent$SpawnReason;)Lnet/minecraft/world/entity/Mob;",
+        "at": {
+          "target": "Lnet/minecraft/server/level/ServerLevel;addFreshEntity(Lnet/minecraft/world/entity/Entity;Lorg/bukkit/event/entity/CreatureSpawnEvent$SpawnReason;)Z"
+        }
+      },
+      "net.fabricmc.fabric.mixin.entity.event.ServerPlayerMixin#onSetSpawnPoint": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.entity.event.ServerPlayerMixin#hasNoMonstersNearby": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.entity.event.effect.LivingEntityMixin#beforeAddEffect": {
+        "method": "addEffect(Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;Lorg/bukkit/event/entity/EntityPotionEffectEvent$Cause;Z)Z"
+      },
+      "net.fabricmc.fabric.mixin.entity.event.effect.LivingEntityMixin#allowRemoveAllEffects": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.entity.event.effect.LivingEntityMixin#beforeRemoveAllEffects": {
+        "disable": true
+      }
+    },
     "fabric-events-interaction-v0": {
+      "net.fabricmc.fabric.mixin.event.interaction.ServerGamePacketListenerImplMixin#handleInteract": {
+        "at": {
+          "ordinal": 0
+        }
+      },
       "net.fabricmc.fabric.mixin.event.interaction.ServerGamePacketListenerImplMixin#onPickItemFromBlock": {
         "disable": true
       },
@@ -16,7 +71,17 @@
         "disable": true
       }
     },
+    "fabric-item-api-v1": {
+      "net.fabricmc.fabric.mixin.item.ItemStackMixin#hookDamage": {
+        "disable": true
+      }
+    },
     "fabric-lifecycle-events-v1": {
+      "net.fabricmc.fabric.mixin.event.lifecycle.LivingEntityMixin#getEquipmentChanges": {
+        "at": {
+          "ordinal": 0
+        }
+      },
       "net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin#afterShutdownServer": {
         "at": {
           "value": "INVOKE",
@@ -35,6 +100,19 @@
         }
       }
     },
+    "fabric-menu-api-v1": {
+      "net.fabricmc.fabric.mixin.menu.ServerPlayerMixin#fabric_closeContainerScreenIfAllowed": {
+        "disable": true
+      }
+    },
+    "fabric-message-api-v1": {
+      "net.fabricmc.fabric.mixin.message.MinecraftServerMixin#onGetChatDecorator": {
+        "disable": true
+      },
+      "net.fabricmc.fabric.mixin.message.PlayerListMixin#onSendChatMessage": {
+        "disable": true
+      }
+    },
     "fabric-networking-api-v1": {
       "net.fabricmc.fabric.mixin.networking.ServerCommonPacketListenerImplMixin#handleCustomPayloadReceivedAsync": {
         "disable": true
@@ -47,6 +125,11 @@
     },
     "fabric-registry-sync-v0": {
       "net.fabricmc.fabric.mixin.registry.sync.BootstrapMixin#delayRegistryFreeze": {
+        "disable": true
+      }
+    },
+    "fabric-tag-api-v1": {
+      "net.fabricmc.fabric.mixin.tag.TagLoaderMixin#loadTagsForRegistry": {
         "disable": true
       }
     }

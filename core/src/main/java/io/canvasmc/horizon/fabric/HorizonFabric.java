@@ -44,9 +44,6 @@ public final class HorizonFabric {
 
     private static final Logger LOGGER = Logger.fork(HorizonLoader.LOGGER, "fabric");
     private static boolean loaded;
-    private static boolean lifecycleEvents;
-    private static boolean networking;
-    private static boolean interactionEvents;
     private static RegistryState registryState = RegistryState.OPEN;
     private static Path launchDirectory;
 
@@ -55,18 +52,6 @@ public final class HorizonFabric {
 
     public static boolean isLoaded() {
         return loaded;
-    }
-
-    public static boolean hasLifecycleEvents() {
-        return lifecycleEvents;
-    }
-
-    public static boolean hasNetworking() {
-        return networking;
-    }
-
-    public static boolean hasInteractionEvents() {
-        return interactionEvents;
     }
 
     public static void load(@NonNull EmberClassLoader classLoader, @NonNull Path gameJar, @NonNull String entrypoint, @NonNull List<Path> classPath, String @NonNull [] args) {
@@ -138,9 +123,7 @@ public final class HorizonFabric {
             MixinQuarantine.load(launchDirectory);
         }
 
-        lifecycleEvents = loader.isModLoaded("fabric-lifecycle-events-v1");
-        networking = loader.isModLoaded("fabric-networking-api-v1");
-        interactionEvents = loader.isModLoaded("fabric-events-interaction-v0");
+        FabricApiModule.detect(loader);
         loaded = true;
     }
 

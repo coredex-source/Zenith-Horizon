@@ -36,7 +36,6 @@ public abstract class BuiltInRegistriesMixin {
     private static void horizon$deferFreeze(Runnable runnable, CallbackInfo ci) {
         switch (HorizonFabric.registryBootstrap()) {
             case DEFER -> {
-                REGISTRY.freeze();
                 createContents();
                 runnable.run();
                 ci.cancel();

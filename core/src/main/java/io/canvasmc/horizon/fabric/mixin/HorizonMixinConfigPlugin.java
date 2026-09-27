@@ -33,6 +33,7 @@ public final class HorizonMixinConfigPlugin implements IMixinConfigPlugin {
         }
 
         delegate.onLoad(mixinPackage);
+        MixinPreflight.plugin(entry.name(), delegate);
     }
 
     @Override

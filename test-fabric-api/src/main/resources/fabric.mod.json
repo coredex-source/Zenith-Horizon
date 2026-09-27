@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "horizon-coverage",
+  "version": "1.0.0-SNAPSHOT",
+  "name": "Horizon Fabric API Coverage",
+  "description": "Records every server-side Fabric API callback so Horizon can be compared with Fabric",
+  "authors": [
+    "CanvasMC"
+  ],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.canvasmc.coverage.Coverage"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api-base": "*",
+    "minecraft": ">=26.1"
+  }
+}

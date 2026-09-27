@@ -1,6 +1,6 @@
 package io.canvasmc.horizon.inject.fabricapi.mixin;
 
-import io.canvasmc.horizon.fabric.HorizonFabric;
+import io.canvasmc.horizon.fabric.FabricApiModule;
 import io.canvasmc.horizon.inject.fabricapi.FabricEvents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -23,14 +23,14 @@ public abstract class LevelChunkMixin {
 
     @Inject(method = "loadCallback", at = @At("HEAD"))
     private void horizon$fabricChunkLoad(CallbackInfo ci) {
-        if (HorizonFabric.hasLifecycleEvents()) {
+        if (FabricApiModule.LIFECYCLE_EVENTS.isLoaded()) {
             FabricEvents.chunkLoad(this.level, (LevelChunk) (Object) this, this.needsDecoration);
         }
     }
 
     @Inject(method = "unloadCallback", at = @At("HEAD"))
     private void horizon$fabricChunkUnload(CallbackInfo ci) {
-        if (HorizonFabric.hasLifecycleEvents()) {
+        if (FabricApiModule.LIFECYCLE_EVENTS.isLoaded()) {
             FabricEvents.chunkUnload(this.level, (LevelChunk) (Object) this);
         }
     }

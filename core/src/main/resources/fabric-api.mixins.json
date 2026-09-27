@@ -1,10 +1,21 @@
 {
   "mixins": [
+    "ChatProcessorMixin",
     "CustomPacketPayloadCodecMixin",
+    "ImprovedChatDecoratorMixin",
+    "ItemStackMixin",
     "LevelChunkMixin",
+    "LevelChunkSectionMixin",
+    "LivingEntityMixin",
     "MinecraftServerMixin",
+    "MobMixin",
+    "NewChunkHolderMixin",
+    "PaperHooksMixin",
     "ServerConfigurationPacketListenerImplMixin",
-    "ServerGamePacketListenerImplMixin"
+    "ServerGamePacketListenerImplMixin",
+    "ServerLevelMixin",
+    "ServerPlayerMixin",
+    "TagLoaderMixin"
   ],
   "package": "io.canvasmc.horizon.inject.fabricapi.mixin",
   "plugin": "io.canvasmc.horizon.fabric.mixin.FabricApiMixinPlugin",

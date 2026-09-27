@@ -1,0 +1,20 @@
+{
+  "horizon:disabled_mixins": {
+    "lithostitched": [
+      "dev.worldgen.lithostitched.mixin.common.GameTestServerMixin",
+      {
+        "mixin": "dev.worldgen.lithostitched.mixin.common.LevelStorageSourceMixin",
+        "minecraft": "<26.2"
+      }
+    ]
+  },
+  "horizon:mixin_patches": {
+    "lithostitched": {
+      "dev.worldgen.lithostitched.mixin.server.DedicatedServerMixin#initServer": {
+        "at": {
+          "target": "Lnet/minecraft/server/dedicated/DedicatedServer;loadLevel(Ljava/lang/String;)V"
+        }
+      }
+    }
+  }
+}

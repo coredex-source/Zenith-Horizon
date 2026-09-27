@@ -1,6 +1,6 @@
 package io.canvasmc.horizon.inject.fabricapi.mixin;
 
-import io.canvasmc.horizon.fabric.HorizonFabric;
+import io.canvasmc.horizon.fabric.FabricApiModule;
 import io.canvasmc.horizon.inject.fabricapi.FabricNetworking;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 import net.minecraft.server.MinecraftServer;
@@ -28,7 +28,7 @@ public abstract class ServerConfigurationPacketListenerImplMixin {
 
     @Inject(method = "handleCustomPayload", at = @At("HEAD"), cancellable = true)
     private void horizon$fabricConfigurationPayload(ServerboundCustomPayloadPacket packet, CallbackInfo ci) {
-        if (HorizonFabric.hasNetworking() && FabricNetworking.handleConfigurationPayload((ServerConfigurationPacketListenerImpl) (Object) this, packet)) {
+        if (FabricApiModule.NETWORKING.isLoaded() && FabricNetworking.handleConfigurationPayload((ServerConfigurationPacketListenerImpl) (Object) this, packet)) {
             ci.cancel();
         }
     }

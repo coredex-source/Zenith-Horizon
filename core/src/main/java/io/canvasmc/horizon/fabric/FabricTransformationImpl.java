@@ -61,7 +61,9 @@ public final class FabricTransformationImpl implements TransformationService {
             }
         }
 
-        if (!applyClassTweaker && !transformAccess && stripData == null) {
+        boolean restoreCalls = VanillaCallSites.restores(type.getInternalName());
+        boolean addMembers = VanillaMembers.adds(type.getInternalName());
+        if (!applyClassTweaker && !transformAccess && stripData == null && !restoreCalls && !addMembers) {
             return null;
         }
 
@@ -81,6 +83,12 @@ public final class FabricTransformationImpl implements TransformationService {
         }
 
         node.accept(visitor);
+        if (restoreCalls) {
+            VanillaCallSites.restore(result);
+        }
+        if (addMembers) {
+            VanillaMembers.add(result);
+        }
         return result;
     }
 }

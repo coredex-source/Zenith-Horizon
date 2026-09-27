@@ -89,11 +89,12 @@ have multiple server JARs and swap between the target Horizons they use.
   plugins; however, you can separate them if you need or want to.
 - The `modsDirectory` option points to the directory Horizon reads Fabric mods from, and `extraMods` allows for adding additional
   individual Fabric mod jars.
-- Fabric mods are only supported on Minecraft 26.1 and newer.
+- Fabric mods are only supported on Minecraft 26.1 and newer (tested on 26.1.2, 26.2 and 26.3).
 - `modsDirectory` can also be overridden with the `-DHorizon.modsDirectory` JVM argument.
 - Horizon generates a `config/horizon/paper-mod.defaults.json` file for default fabric mod overrides, users can put their own changes
   in `config/horizon/paper-mod.json`. Its `horizon:disabled_mixins` entry lists single mixins (by mod id) that Horizon
-  skips because they don't work on Paper, and `horizon:mixin_patches` changes single injectors (`"mixin.Class#handler"`)
+  skips because they don't work on Paper, either as names or as `{"mixin": ..., "versions": ..., "minecraft": ...}` to
+  skip them only on some versions, and `horizon:mixin_patches` changes single injectors (`"mixin.Class#handler"`)
   to fit Paper: `disable`, `require`, `method`, `at` and `append`, optionally limited with `versions` and `minecraft`.
 - Before loading mods Horizon checks every fabric mod mixin against the server. `mixinPreflight` decides what happens to
   mixins that don't match: `disable-mixin` (default) skips them with a warning, `fail` stops the server, and `warn` only
@@ -104,6 +105,17 @@ have multiple server JARs and swap between the target Horizons they use.
 
 Once all options are configured to your liking, you can boot the Horizon JAR as usual, and your server will run with
 Horizon as its bootstrapper!
+
+### Fabric Mod Benchmark
+
+Paper 26.3-45 with Horizon and Fabric API 0.161.0 on a stress world (127 villagers, 128 cows, 64 chickens, 320 hopper
+loops, 320 observer clocks, 144 force-loaded chunks), averaged over 3 runs. Percentages are against paper with frapi.
+
+| Setup | Boot | Median tick | p95 tick | Heap after GC |
+|---|---|---|---|---|
+| Fabric API | 12.07 s | 10.67 ms | 20.17 ms | 345 MB |
+| + ModernFix 5.27.20 | 11.62 s (-3.7%) | 10.83 ms (+1.6%) | 20.10 ms (-0.3%) | 242 MB (-29.8%) |
+| + ModernFix, Lithium 0.26.1, FerriteCore 9.0.0 | 11.98 s (-0.7%) | 9.87 ms (-7.5%) | 18.73 ms (-7.1%) | 253 MB (-26.6%) |
 
 ### Plugin Development
 

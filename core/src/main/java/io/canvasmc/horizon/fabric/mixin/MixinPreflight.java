@@ -21,6 +21,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfig;
+import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.service.MixinService;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -49,6 +51,7 @@ public final class MixinPreflight {
     private static final String ACCESSOR = "Lorg/spongepowered/asm/mixin/gen/Accessor;";
     private static final String INVOKER = "Lorg/spongepowered/asm/mixin/gen/Invoker;";
     private static final String INJECT = "Lorg/spongepowered/asm/mixin/injection/Inject;";
+    private static final String MODIFY_VARIABLE = "Lorg/spongepowered/asm/mixin/injection/ModifyVariable;";
     private static final String GROUP = "Lorg/spongepowered/asm/mixin/injection/Group;";
     private static final String COERCE = "Lorg/spongepowered/asm/mixin/injection/Coerce;";
     private static final String SURROGATE = "Lorg/spongepowered/asm/mixin/injection/Surrogate;";
@@ -59,7 +62,7 @@ public final class MixinPreflight {
         "Lorg/spongepowered/asm/mixin/injection/Redirect;",
         "Lorg/spongepowered/asm/mixin/injection/ModifyArg;",
         "Lorg/spongepowered/asm/mixin/injection/ModifyArgs;",
-        "Lorg/spongepowered/asm/mixin/injection/ModifyVariable;",
+        MODIFY_VARIABLE,
         "Lorg/spongepowered/asm/mixin/injection/ModifyConstant;",
         "Lcom/llamalad7/mixinextras/injector/ModifyExpressionValue;",
         "Lcom/llamalad7/mixinextras/injector/ModifyReceiver;",
@@ -77,8 +80,12 @@ public final class MixinPreflight {
     private static final Map<String, List<Member>> MERGED_METHODS = new HashMap<>();
     private static final Map<String, Declared> MIXINS = new HashMap<>();
     private static final Map<String, Set<String>> BROKEN = new TreeMap<>();
-    private static final Map<String, List<Adaptation>> ADAPTATIONS = new HashMap<>();
+    private static final Map<String, Adaptations> ADAPTATIONS = new HashMap<>();
+    private static final Map<String, Set<String>> STRIPS = new HashMap<>();
+    private static final Map<String, IMixinConfigPlugin> PLUGINS = new ConcurrentHashMap<>();
+    private static final Map<String, Integer> STRIPPED = new TreeMap<>();
     private static boolean indexed;
+    private static boolean indexing;
 
     private MixinPreflight() {
     }
@@ -92,12 +99,13 @@ public final class MixinPreflight {
         index();
         String target = targetClassName.replace('.', '/');
         PreflightPolicy policy = HorizonLoader.getInstance().getProperties().mixinPreflight();
-        List<String> problems = inspect(entry, mixin, target);
+        Findings findings = inspect(entry, mixin, target);
+        List<String> problems = findings.problems();
         if (problems.isEmpty() && policy != PreflightPolicy.WARN) {
             String parent = brokenParent(mixin);
             if (parent != null) problems.add("it extends the mixin " + parent + ", which doesn't match this server");
         }
-        if (problems.isEmpty()) {
+        if (problems.isEmpty() || (policy == PreflightPolicy.DISABLE_MIXIN && findings.strippable())) {
             return true;
         }
 
@@ -127,19 +135,35 @@ public final class MixinPreflight {
     }
 
     private static synchronized void adapt(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin) {
-        List<Adaptation> adaptations = ADAPTATIONS.get(mixin.name);
+        Adaptations adaptations = ADAPTATIONS.get(mixin.name);
         if (adaptations == null) {
-            adaptations = adaptations(entry, mixin);
+            adaptations = new Adaptations(adaptations(entry, mixin), retypes(entry, mixin));
             ADAPTATIONS.put(mixin.name, adaptations);
         }
 
-        for (Adaptation adaptation : adaptations) {
+        for (Retype retype : adaptations.fields()) {
+            for (FieldNode field : mixin.fields) {
+                if (field.name.equals(retype.field()) && field.desc.equals(retype.from())) {
+                    field.desc = retype.to();
+                    field.signature = null;
+                }
+            }
+            for (MethodNode method : mixin.methods) {
+                for (AbstractInsnNode insn : method.instructions) {
+                    if (insn instanceof FieldInsnNode access && access.owner.equals(mixin.name) && access.name.equals(retype.field()) && access.desc.equals(retype.from())) {
+                        access.desc = retype.to();
+                    }
+                }
+            }
+        }
+
+        for (Adaptation adaptation : adaptations.handlers()) {
             for (MethodNode handler : mixin.methods) {
                 if (!handler.name.equals(adaptation.handler()) || !handler.desc.equals(adaptation.desc())) continue;
 
-                AnnotationNode inject = annotation(handler.visibleAnnotations, handler.invisibleAnnotations, INJECT);
-                if (inject != null && adaptation.method() != null) {
-                    MixinPatches.set(inject, "method", new ArrayList<>(List.of(adaptation.method())));
+                AnnotationNode injector = injector(handler);
+                if (injector != null && adaptation.method() != null) {
+                    MixinPatches.set(injector, "method", new ArrayList<>(List.of(adaptation.method())));
                 }
                 if (adaptation.returnable()) {
                     MixinPatches.upgradeCallback(handler);
@@ -150,6 +174,56 @@ public final class MixinPreflight {
                 break;
             }
         }
+
+        if (indexing || HorizonLoader.getInstance().getProperties().mixinPreflight() != PreflightPolicy.DISABLE_MIXIN) {
+            return;
+        }
+        Set<String> strip = STRIPS.get(mixin.name);
+        if (strip == null) {
+            strip = strips(entry, mixin);
+            STRIPS.put(mixin.name, strip);
+        }
+        for (MethodNode handler : mixin.methods) {
+            if (strip.contains(handler.name + handler.desc)) {
+                if (handler.visibleAnnotations != null) handler.visibleAnnotations.removeIf((annotation) -> INJECTORS.contains(annotation.desc));
+                if (handler.invisibleAnnotations != null) handler.invisibleAnnotations.removeIf((annotation) -> INJECTORS.contains(annotation.desc));
+            }
+        }
+    }
+
+    static void plugin(@NonNull String config, @NonNull IMixinConfigPlugin plugin) {
+        PLUGINS.put(config, plugin);
+    }
+
+    private static @NonNull Set<String> strips(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin) {
+        AnnotationNode annotation = annotation(mixin.visibleAnnotations, mixin.invisibleAnnotations, MIXIN);
+        if (annotation == null) {
+            return Set.of();
+        }
+
+        index();
+        Set<String> handlers = new LinkedHashSet<>();
+        List<String> problems = new ArrayList<>();
+        IMixinConfigPlugin plugin = PLUGINS.get(entry.name());
+        for (String target : targets(annotation)) {
+            if (plugin != null && !plugin.shouldApplyMixin(target.replace('/', '.'), mixin.name.replace('/', '.'))) continue;
+
+            Findings findings = inspect(entry, mixin, target);
+            if (findings.problems().isEmpty()) continue;
+            if (!findings.strippable()) return Set.of();
+
+            handlers.addAll(findings.injectors());
+            problems.addAll(findings.problems());
+        }
+
+        if (!handlers.isEmpty()) {
+            String name = mixin.name.replace('/', '.');
+            String mixinName = name.startsWith(entry.mixinPackage() + ".") ? name.substring(entry.mixinPackage().length() + 1) : name;
+            LOGGER.warn("Disabling {} injector(s) in mixin {} from {} ({}), the rest of the mixin still applies:", handlers.size(), mixinName, entry.modId(), entry.name());
+            problems.forEach((problem) -> LOGGER.warn("  - {}", problem));
+            STRIPPED.merge(entry.modId(), handlers.size(), Integer::sum);
+        }
+        return handlers;
     }
 
     private static @NonNull List<Adaptation> adaptations(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin) {
@@ -162,8 +236,10 @@ public final class MixinPreflight {
 
         List<Adaptation> adaptations = new ArrayList<>();
         for (MethodNode handler : mixin.methods) {
-            AnnotationNode inject = annotation(handler.visibleAnnotations, handler.invisibleAnnotations, INJECT);
-            List<String> selectors = inject != null && value(inject, "target") == null ? strings(value(inject, "method")) : List.of();
+            AnnotationNode injector = injector(handler);
+            if (injector == null || injector.desc.equals(MODIFY_VARIABLE)) continue;
+            AnnotationNode inject = injector.desc.equals(INJECT) ? injector : null;
+            List<String> selectors = value(injector, "target") == null ? strings(value(injector, "method")) : List.of();
             Selector selector = selectors.size() == 1 ? Selector.parse(selectors.getFirst()) : null;
             if (selector == null || selector.all() || selector.name() == null) continue;
 
@@ -172,7 +248,7 @@ public final class MixinPreflight {
 
             MethodNode method = selected.getFirst();
             String retarget = null;
-            List<AnnotationNode> points = points(inject);
+            List<AnnotationNode> points = points(injector);
             if (selector.desc() == null && points != null && evaluable(points) && !found(points, List.of(method))) {
                 MethodNode original = method;
                 List<MethodNode> candidates = target.methods.stream()
@@ -182,6 +258,14 @@ public final class MixinPreflight {
 
                 method = candidates.getFirst();
                 retarget = method.name + method.desc;
+            }
+            if (inject == null) {
+                if (retarget != null) {
+                    adaptations.add(new Adaptation(handler.name, handler.desc, retarget, false, List.of(), null));
+                    LOGGER.info("Adapting {} {} in {} from {} to {}::{}{}", simpleName(injector.desc), handler.name, mixin.name.replace('/', '.'), entry.modId(),
+                        target.name.replace('/', '.'), method.name, method.desc);
+                }
+                continue;
             }
             if (retarget == null && selector.desc() == null) {
                 MethodNode delegate = delegate(target, method);
@@ -213,6 +297,60 @@ public final class MixinPreflight {
                 target.name.replace('/', '.'), method.name, method.desc);
         }
         return adaptations;
+    }
+
+    private static @NonNull List<Retype> retypes(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin) {
+        AnnotationNode annotation = annotation(mixin.visibleAnnotations, mixin.invisibleAnnotations, MIXIN);
+        List<String> targets = annotation != null ? targets(annotation) : List.of();
+        ClassNode target = targets.size() == 1 ? classNode(targets.getFirst()) : null;
+        if (target == null) {
+            return List.of();
+        }
+
+        List<Retype> retypes = new ArrayList<>();
+        for (FieldNode field : mixin.fields) {
+            AnnotationNode shadow = annotation(field.visibleAnnotations, field.invisibleAnnotations, SHADOW);
+            if (shadow == null || Type.getType(field.desc).getSort() != Type.OBJECT) continue;
+
+            List<String> names = aliases(field.name, shadow);
+            if (target.fields.stream().anyMatch((candidate) -> names.contains(candidate.name) && candidate.desc.equals(field.desc))) continue;
+
+            FieldNode narrowed = target.fields.stream()
+                .filter((candidate) -> names.contains(candidate.name) && Type.getType(candidate.desc).getSort() == Type.OBJECT)
+                .findFirst()
+                .orElse(null);
+            if (narrowed == null || writes(mixin, field)
+                || !subtype(Type.getType(narrowed.desc).getInternalName(), Type.getType(field.desc).getInternalName())) {
+                continue;
+            }
+
+            retypes.add(new Retype(field.name, field.desc, narrowed.desc));
+            LOGGER.info("Adapting @Shadow field {} in {} from {} to {}", field.name, mixin.name.replace('/', '.'), entry.modId(), Type.getType(narrowed.desc).getClassName());
+        }
+        return retypes;
+    }
+
+    private static boolean writes(@NonNull ClassNode mixin, @NonNull FieldNode field) {
+        for (MethodNode method : mixin.methods) {
+            for (AbstractInsnNode insn : method.instructions) {
+                if (insn instanceof FieldInsnNode access && access.owner.equals(mixin.name) && access.name.equals(field.name)
+                    && (access.getOpcode() == Opcodes.PUTFIELD || access.getOpcode() == Opcodes.PUTSTATIC)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean subtype(@NonNull String type, @NonNull String parent) {
+        for (String current = type; current != null; ) {
+            if (current.equals(parent)) return true;
+            ClassNode node = classNode(current);
+            if (node == null) return false;
+            if (node.interfaces.contains(parent)) return true;
+            current = node.superName;
+        }
+        return false;
     }
 
     private static @Nullable MethodNode delegate(@NonNull ClassNode target, @NonNull MethodNode method) {
@@ -267,6 +405,11 @@ public final class MixinPreflight {
         MERGED_METHODS.clear();
         indexed = false;
 
+        if (!STRIPPED.isEmpty()) {
+            LOGGER.warn("Disabled {} injector(s) that don't match this server: {}", STRIPPED.values().stream().mapToInt(Integer::intValue).sum(),
+                STRIPPED.entrySet().stream().map((entry) -> entry.getKey() + " (" + entry.getValue() + ")").collect(Collectors.joining(", ")));
+            STRIPPED.clear();
+        }
         if (BROKEN.isEmpty()) {
             return;
         }
@@ -285,14 +428,15 @@ public final class MixinPreflight {
         }
     }
 
-    private static @NonNull List<String> inspect(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin, @NonNull String target) {
+    private static @NonNull Findings inspect(FabricMixinConfigs.@NonNull Entry entry, @NonNull ClassNode mixin, @NonNull String target) {
         List<String> problems = new ArrayList<>();
+        Set<String> injectors = new LinkedHashSet<>();
         ClassNode node = classNode(target);
         if (node == null) {
             if (annotation(mixin.visibleAnnotations, mixin.invisibleAnnotations, PSEUDO) == null && missingTargetIsFatal(entry)) {
                 problems.add("target class " + target.replace('/', '.') + " doesn't exist");
             }
-            return problems;
+            return new Findings(problems, injectors, 0);
         }
 
         for (FieldNode field : mixin.fields) {
@@ -305,6 +449,7 @@ public final class MixinPreflight {
             if (!found) problems.add("@Shadow field " + field.name + " " + field.desc + " doesn't exist");
         }
 
+        int injectorProblems = 0;
         for (MethodNode method : mixin.methods) {
             for (AnnotationNode annotation : annotations(method.visibleAnnotations, method.invisibleAnnotations)) {
                 switch (annotation.desc) {
@@ -312,12 +457,19 @@ public final class MixinPreflight {
                     case ACCESSOR -> checkAccessor(problems, mixin, method, annotation, node);
                     case INVOKER -> checkInvoker(problems, mixin, method, annotation, node);
                     default -> {
-                        if (INJECTORS.contains(annotation.desc)) checkInjector(problems, entry, mixin, method, annotation, node);
+                        if (INJECTORS.contains(annotation.desc)) {
+                            int before = problems.size();
+                            checkInjector(problems, entry, mixin, method, annotation, node);
+                            if (problems.size() > before) {
+                                injectors.add(method.name + method.desc);
+                                injectorProblems += problems.size() - before;
+                            }
+                        }
                     }
                 }
             }
         }
-        return problems;
+        return new Findings(problems, injectors, injectorProblems);
     }
 
     private static @Nullable String brokenParent(@NonNull ClassNode mixin) {
@@ -326,7 +478,7 @@ public final class MixinPreflight {
         if (node == null) return null;
 
         for (String target : parent.targets()) {
-            if (!inspect(parent.entry(), node, target).isEmpty()) return node.name.replace('/', '.');
+            if (!inspect(parent.entry(), node, target).problems().isEmpty()) return node.name.replace('/', '.');
         }
         return brokenParent(node);
     }
@@ -494,7 +646,12 @@ public final class MixinPreflight {
 
     private static boolean evaluable(@NonNull List<AnnotationNode> points) {
         for (AnnotationNode point : points) {
-            if (!(value(point, "value") instanceof String kind) || !MEMBER_POINTS.contains(kind)) return false;
+            if (!(value(point, "value") instanceof String kind)) return false;
+            if (kind.equals("RETURN")) {
+                if (value(point, "target") != null || value(point, "desc") != null) return false;
+                continue;
+            }
+            if (!MEMBER_POINTS.contains(kind)) return false;
             if (!(value(point, "target") instanceof String target) || target.isBlank() || value(point, "desc") != null) return false;
             if (!kind.equals("NEW") && Selector.parse(target) == null) return false;
         }
@@ -516,7 +673,11 @@ public final class MixinPreflight {
         return false;
     }
 
-    private static boolean matches(@NonNull AbstractInsnNode insn, @NonNull String kind, @NonNull String target) {
+    private static boolean matches(@NonNull AbstractInsnNode insn, @NonNull String kind, @Nullable String target) {
+        if (kind.equals("RETURN")) {
+            return insn.getOpcode() >= Opcodes.IRETURN && insn.getOpcode() <= Opcodes.RETURN;
+        }
+        if (target == null) return false;
         if (kind.equals("NEW")) {
             return insn instanceof TypeInsnNode type && type.getOpcode() == Opcodes.NEW && type.desc.equals(newType(target));
         }
@@ -567,7 +728,8 @@ public final class MixinPreflight {
 
     private static @NonNull String describePoints(@NonNull List<AnnotationNode> points) {
         return points.stream()
-            .map((point) -> value(point, "value") + " " + value(point, "target"))
+            .map((point) -> value(point, "value") + (value(point, "target") != null ? " " + value(point, "target") : "")
+                + (value(point, "ordinal") != null ? " ordinal " + value(point, "ordinal") : ""))
             .collect(Collectors.joining(" or "));
     }
 
@@ -591,7 +753,15 @@ public final class MixinPreflight {
     private static void index() {
         if (indexed) return;
         indexed = true;
+        indexing = true;
+        try {
+            indexMixins();
+        } finally {
+            indexing = false;
+        }
+    }
 
+    private static void indexMixins() {
         for (FabricMixinConfigs.Entry entry : FabricMixinConfigs.entries()) {
             for (String name : entry.mixins()) {
                 ClassNode mixin = classNode(name);
@@ -693,6 +863,18 @@ public final class MixinPreflight {
     }
 
     private record Declared(FabricMixinConfigs.Entry entry, List<String> targets) {
+    }
+
+    private record Findings(List<String> problems, Set<String> injectors, int injectorProblems) {
+        boolean strippable() {
+            return !this.problems.isEmpty() && this.injectorProblems == this.problems.size();
+        }
+    }
+
+    private record Adaptations(List<Adaptation> handlers, List<Retype> fields) {
+    }
+
+    private record Retype(String field, String from, String to) {
     }
 
     private record Adaptation(String handler, String desc, @Nullable String method, boolean returnable, List<Type> parameters, int @Nullable [] positions) {

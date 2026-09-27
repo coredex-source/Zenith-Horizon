@@ -1,5 +1,9 @@
 package io.canvasmc.testplugin;
 
+import io.papermc.paper.event.player.AsyncChatDecorateEvent;
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -34,6 +38,28 @@ public class HorizonTestPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onRegisterChannel(@NonNull PlayerRegisterChannelEvent event) {
         getLogger().info("channel registered: " + event.getChannel() + " by " + event.getPlayer().getName());
+    }
+
+    @EventHandler
+    public void onChatDecorate(@NonNull AsyncChatDecorateEvent event) {
+        String text = plain(event.result());
+        getLogger().info("chat: bukkit decorate '" + text + "'");
+        if (text.contains("bukkit-decorate")) {
+            event.result(Component.text(text.replace("bukkit-decorate", "bukkit-decorated")));
+        }
+    }
+
+    @EventHandler
+    public void onChat(@NonNull AsyncChatEvent event) {
+        String text = plain(event.message());
+        getLogger().info("chat: bukkit chat '" + text + "' from " + event.getPlayer().getName());
+        if (text.contains("bukkit-deny")) {
+            event.setCancelled(true);
+        }
+    }
+
+    private static @NonNull String plain(@NonNull Component component) {
+        return PlainTextComponentSerializer.plainText().serialize(component);
     }
 
     @EventHandler

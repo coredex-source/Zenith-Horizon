@@ -58,5 +58,11 @@ public final class TestFabricApi {
                 command.getSource().sendSuccess(() -> Component.literal("horizon test command works"), false);
                 return 1;
             })));
+        CommandRegistrationCallback.EVENT.register((dispatcher, context, selection) -> dispatcher.register(Commands.literal("horizonop")
+            .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+            .executes((command) -> {
+                command.getSource().sendSuccess(() -> Component.literal("horizon op command works"), false);
+                return 1;
+            })));
     }
 }

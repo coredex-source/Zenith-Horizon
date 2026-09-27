@@ -170,7 +170,7 @@ public final class PaperOverrides {
         boolean removed = false;
         for (int i = array.size() - 1; i >= 0; i--) {
             JsonNode element = array.get(i);
-            if (element.isTextual() && element.textValue().equals(text)) {
+            if (text.equals(element.isObject() ? element.path("mixin").asText(null) : element.textValue())) {
                 array.remove(i);
                 removed = true;
             }

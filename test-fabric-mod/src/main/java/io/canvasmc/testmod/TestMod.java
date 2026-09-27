@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 public class TestMod implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("horizon-testmod");
     public static final Identifier TEST_SOUND = Identifier.fromNamespaceAndPath("horizon-testmod", "test_sound");
+    public static volatile boolean worldgenAttachments;
 
     @Override
     public void onInitialize() {
@@ -20,8 +21,18 @@ public class TestMod implements ModInitializer {
         if (FabricLoader.getInstance().isModLoaded("fabric-lifecycle-events-v1") && FabricLoader.getInstance().isModLoaded("fabric-command-api-v2")) {
             TestFabricApi.register();
         }
+        if (FabricLoader.getInstance().isModLoaded("fabric-entity-events-v1") && FabricLoader.getInstance().isModLoaded("fabric-data-attachment-api-v1")
+            && FabricLoader.getInstance().isModLoaded("fabric-item-api-v1") && FabricLoader.getInstance().isModLoaded("fabric-command-api-v2")) {
+            TestEntityEvents.register();
+        }
+        if (FabricLoader.getInstance().isModLoaded("fabric-data-attachment-api-v1") && FabricLoader.getInstance().isModLoaded("fabric-lifecycle-events-v1")) {
+            TestChunkAttachments.register();
+        }
         if (FabricLoader.getInstance().isModLoaded("fabric-events-interaction-v0")) {
             TestInteraction.register();
+        }
+        if (FabricLoader.getInstance().isModLoaded("fabric-message-api-v1")) {
+            TestChat.register();
         }
         if (FabricLoader.getInstance().isModLoaded("fabric-networking-api-v1")) {
             TestNetworking.register();

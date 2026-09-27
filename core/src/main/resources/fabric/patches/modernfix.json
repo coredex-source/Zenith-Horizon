@@ -1,0 +1,7 @@
+{
+  "modernfix:options": {
+    "mixin.feature.stalled_chunk_load_detection": false,
+    "mixin.perf.compact_imposterprotochunks": false,
+    "mixin.perf.thread_priorities": false
+  }
+}

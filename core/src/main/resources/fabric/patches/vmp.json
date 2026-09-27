@@ -5,5 +5,13 @@
       "com.ishland.vmp.mixins.playerwatching.*",
       "com.ishland.vmp.mixins.ticketsystem.*"
     ]
+  },
+  "horizon:mixin_patches": {
+    "vmp": {
+      "com.ishland.vmp.mixins.networking.avoid_deadlocks.MixinClientConnection#noDisconnectWait": {
+        "disable": true,
+        "minecraft": "<26.1.2"
+      }
+    }
   }
 }
